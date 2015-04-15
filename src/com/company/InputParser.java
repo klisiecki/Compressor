@@ -42,6 +42,7 @@ public class InputParser {
         if (number.charAt(0) == '1') {
             number = "111111" + number;
         }
+
         return (short)Integer.parseInt(number, 2);
     }
 }
