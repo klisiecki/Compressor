@@ -1,19 +1,16 @@
 package com.company;
 
-import java.util.Arrays;
-
 public class Compressor {
     private static final int HIST_SIZE = 10;
 
 
     public void initializePackage(CompressedPackage compressedPackage, short[] data, int maxPackageSize) {
-        System.out.println(Arrays.toString(createStats(data)) + "");
+//        System.out.println(Arrays.toString(createStats(data)) + "");
+//        System.out.println();
 
-        System.out.println();
-
-        calculateDataCountResult growthsResult = calculateDataCount(data, CompressMode.GROWTHS, maxPackageSize);
-        calculateDataCountResult mixedResult = calculateDataCount(data, CompressMode.MIXED, maxPackageSize);
-        calculateDataCountResult valuesResult = calculateDataCount(data, CompressMode.VALUES, maxPackageSize);
+        analyzeDataResult growthsResult = analyzeDataGrowthsMode(data, maxPackageSize);
+        analyzeDataResult mixedResult = analyzeDataMixedMode(data, maxPackageSize);
+        analyzeDataResult valuesResult = analyzeDataValuesMode(data, maxPackageSize);
 
         System.out.println("\n\nGrowths mode statistics:");
         growthsResult.print();
@@ -23,134 +20,140 @@ public class Compressor {
         valuesResult.print();
 
         // Tylko tymczasowo:
-        compressedPackage.initialize(CompressMode.GROWTHS, growthsResult.dataCount, growthsResult.growthBitsNum);
+        compressedPackage.initialize(CompressMode.GROWTHS, growthsResult.dataCount, growthsResult.growthBits);
         compress(compressedPackage, data);
-        compressedPackage.initialize(CompressMode.MIXED, mixedResult.dataCount, mixedResult.growthBitsNum);
+        compressedPackage.initialize(CompressMode.MIXED, mixedResult.dataCount, mixedResult.growthBits);
         compress(compressedPackage, data);
-        compressedPackage.initialize(CompressMode.VALUES, valuesResult.dataCount, valuesResult.growthBitsNum);
+        compressedPackage.initialize(CompressMode.VALUES, valuesResult.dataCount, valuesResult.growthBits);
         compress(compressedPackage, data);
 
         // Potem to odkomentować:
 //        if(growthsResult.dataCount >= mixedResult.dataCount
 //                && growthsResult.dataCount >= valuesResult.dataCount){ // growths mode
-//            compressedPackage.initialize(CompressMode.GROWTHS, growthsResult.dataCount,
-//                    growthsResult.growthBitsNum);
+//            compressedPackage.initialize(CompressMode.GROWTHS, growthsResult.dataCount, growthsResult.growthBits);
 //        }
 //        else if(mixedResult.dataCount >= valuesResult.dataCount){ // mixed mode
-//            compressedPackage.initialize(CompressMode.MIXED, mixedResult.dataCount,
-//                    mixedResult.growthBitsNum);
+//            compressedPackage.initialize(CompressMode.MIXED, mixedResult.dataCount, mixedResult.growthBits);
 //        }
 //        else{ // values mode
-//            compressedPackage.initialize(CompressMode.VALUES, valuesResult.dataCount,
-//                    valuesResult.growthBitsNum);
+//            compressedPackage.initialize(CompressMode.VALUES, valuesResult.dataCount, valuesResult.growthBits);
 //        }
 
         return;
     }
 
-    private calculateDataCountResult calculateDataCount(short[] data, CompressMode mode, int maxPackageSize) {
-        calculateDataCountResult result = new calculateDataCountResult();
+
+    private analyzeDataResult analyzeDataGrowthsMode(short[] data, int maxPackageSize){
+//        System.out.println("\n\n\nGROWTHS MODE CALCULATE:");
+
+        analyzeDataResult result = new analyzeDataResult();
         int[] hist = new int[HIST_SIZE];
-        int headerSize = 0;
-        int dataSize;
+        int headerSize = 28;
+        int dataSize = 0;
         int growthBits = 0;
-        short value;
+        int value = data[0];
         boolean progress;
 
-        switch (mode) {
-            case GROWTHS:
-                System.out.println("\n\n\nGROWTHS MODE CALCULATE:");
-                headerSize = 28;
-                value = data[0];
+        for (int i = 1; i < data.length; i++) { // pętla od 1, bo 0 trafia do nagłówka paczki
+            progress = false;
+            hist[getBitsForGrowth(data[i] - value)-1]++; // -1 żeby odwzorować [1,10] na tablicę [0,9]
+            growthBits = getMaxBits(hist) +1; // +1 na znak
 
-                for (int i = 1; i < data.length; i++) {
-                    progress = false;
-                    hist[getBitsForGrowth(data[i] - value)-1]++;
-                    growthBits = getMaxBits(hist) +1; // +1 na znak
+//            System.out.print("\nhist = " + Arrays.toString(hist));
+//            System.out.print("\n  growthBits = " + growthBits);
 
-                    System.out.print("\nhist = " + Arrays.toString(hist));
-                    System.out.print("\n  growthBits = " + growthBits);
-
-                    dataSize = growthBits * i;
-                    if (headerSize + dataSize < maxPackageSize) {
-                        result.growthBitsNum = growthBits;
-                        result.dataCount = i;
-                        result.packageSize = headerSize + dataSize;
-                        progress = true;
-                    }
-                    value = data[i];
-                    if(!progress) break;
-                }
-
-                return result;
-
-            case MIXED:
-                System.out.println("\n\n\nMIXED MODE CALCULATE:");
-                headerSize = 28;
-                value = data[0];
-                for (int i = 1; i < data.length; i++) {
-                    progress = false;
-                    System.out.println("\n\ni = " + i);
-//                    System.out.println("\ndata[i] = " + data[i] +  "   value = " + value);
-//                    System.out.println("getBitsForGrowth(data[i] - value) = " + getBitsForGrowth(data[i] - value));
-                    hist[getBitsForGrowth(data[i] - value)-1]++;
-
-                    System.out.print("hist = " + Arrays.toString(hist));
-
-                    for (int j = 0; j < HIST_SIZE; j++) {
-                        int constantValues = getValuesCountAbove(hist, j);
-                        int growths = i - constantValues;
-
-                        growthBits  = j +1 +1; // +1 bo dla j=0 zajmuje 1 bit, +1 na znak
-
-                        dataSize = constantValues * (10 + 1) // +1 bo jeden bit na typ wartości
-                                + growths * (growthBits +1); // +1 bo jeden bit na typ wartości
-
-                        System.out.print("\n  j = " + j);
-                        System.out.print("  constantValues = " + constantValues);
-                        System.out.print("  growths = " + growths);
-                        System.out.print("  size = " + dataSize);
-
-                        if (i > result.dataCount && dataSize + headerSize <= maxPackageSize) {
-                            System.out.print("\n\t\t\tNowy max = " + i);
-                            result.dataCount = i;
-                            result.growthBitsNum = growthBits;
-                            result.constantValuesNum = constantValues;
-                            result.growthValuesNum = growths;
-                            result.packageSize = headerSize + dataSize;
-                            progress = true;
-                        }
-                    }
-
-                    value = data[i];
-                    if(!progress) break; // jeśli w tym przebiegu pętli nie udało się poprawić wyniku, to już nigdy się nie uda
-                }
-
-                return result;
-
-            case VALUES:
-                System.out.println("\n\n\nVALUES MODE CALCULATE:");
-                headerSize = 15;
-                result.dataCount = Math.min( ((maxPackageSize - headerSize) / 10), data.length);
-                dataSize = result.dataCount * 10;
-                result.packageSize = dataSize + headerSize;
-                return result;
+            dataSize = growthBits * i;
+            if (headerSize + dataSize <= maxPackageSize) {
+                result.growthBits = growthBits;
+                result.dataCount = i;
+                result.packageSize = headerSize + dataSize;
+                progress = true;
+            }
+            value = data[i];
+            if(!progress) break; // jeśli w tym przebiegu pętli nie udało się poprawić wyniku, to już nigdy się nie uda
         }
-        return null;
+
+        return result;
+
     }
 
-    private class calculateDataCountResult{
+
+    private analyzeDataResult analyzeDataMixedMode(short[] data, int maxPackageSize) {
+//        System.out.println("\n\n\nMIXED MODE CALCULATE:");
+
+        analyzeDataResult result = new analyzeDataResult();
+        int[] hist = new int[HIST_SIZE];
+        int headerSize = 28;
+        int dataSize = 0;
+        int growthBits = 0;
+        int value = data[0];
+        boolean progress;
+
+        for (int i = 1; i < data.length; i++) { // pętla od 1, bo 0 trafia do nagłówka paczki
+            progress = false;
+            hist[getBitsForGrowth(data[i] - value)-1]++; // -1 żeby odwzorować [1,10] na tablicę [0,9]
+//            System.out.println("\n\ni = " + i);
+//            System.out.println("\ndata[i] = " + data[i] +  "   value = " + value);
+//            System.out.println("getBitsForGrowth(data[i] - value) = " + getBitsForGrowth(data[i] - value));
+//            System.out.print("hist = " + Arrays.toString(hist));
+
+            for (int j = 0; j < HIST_SIZE; j++) {
+                int constantValuesNum = getValuesCountAbove(hist, j);
+                int growthsValuesNum = i - constantValuesNum;
+
+                growthBits  = j +1 +1; // +1 bo dla j=0 zajmuje 1 bit, +1 na znak
+
+                dataSize = constantValuesNum * (10 +1) // +1 bo jeden bit na typ wartości
+                        + growthsValuesNum * (growthBits +1); // +1 bo jeden bit na typ wartości
+
+//                System.out.print("\n  j = " + j);
+//                System.out.print("  constantValuesNum = " + constantValuesNum);
+//                System.out.print("  growthsValuesNum = " + growthsValuesNum);
+//                System.out.print("  size = " + dataSize);
+
+                if ( (i > result.dataCount) && (dataSize + headerSize <= maxPackageSize) ) {
+//                    System.out.print("\n\t\t\tNowy max = " + i);
+                    result.dataCount = i;
+                    result.growthBits = growthBits;
+                    result.constantValuesNum = constantValuesNum;
+                    result.growthsValuesNum = growthsValuesNum;
+                    result.packageSize = headerSize + dataSize;
+                    progress = true;
+                }
+            }
+
+            value = data[i];
+            if(!progress) break; // jeśli w tym przebiegu pętli nie udało się poprawić wyniku, to już nigdy się nie uda
+        }
+
+        return result;
+    }
+
+    private analyzeDataResult analyzeDataValuesMode(short[] data, int maxPackageSize) {
+//        System.out.println("\n\n\nVALUES MODE CALCULATE:");
+
+        analyzeDataResult result = new analyzeDataResult();
+        int headerSize = 15;
+        int dataSize = 0;
+
+        result.dataCount = Math.min( ((maxPackageSize - headerSize) / 10), data.length);
+        dataSize = result.dataCount * 10;
+        result.packageSize = dataSize + headerSize;
+        return result;
+    }
+
+    private class analyzeDataResult {
         public int dataCount = 0;
         public int packageSize = 0;
-        public int growthBitsNum = 0;
-        public int growthValuesNum = 0;
+        public int growthBits = 0;
+        public int growthsValuesNum = 0;
         public int constantValuesNum = 0;
 
-        public void print(){
+        public void print() {
             System.out.println("dataCount = " + dataCount);
             System.out.println("packageSize = " + packageSize);
-            System.out.println("growthBitsNum = " + growthBitsNum);
-            System.out.println("growthValuesNum = " + growthValuesNum);
+            System.out.println("growthBits = " + growthBits);
+            System.out.println("growthsValuesNum = " + growthsValuesNum);
             System.out.println("constantValuesNum = " + constantValuesNum);
         }
     }
@@ -221,8 +224,7 @@ public class Compressor {
     private void compressGrowthsMode(CompressedPackage compressedPackage, short[] data){
         short value = data[0];
 
-        System.out.println("\n\n\nHEADER 28 bit:");
-        System.out.println("Mode: GROWTHS (bit 0-1) ");
+        System.out.println("\n\nMode: GROWTHS (bit 0-1) ");
         System.out.println("Bits for growth: " + compressedPackage.getGrowthBits() + " (bit 2-4)");
         System.out.println("Length: " + compressedPackage.getDataCount() + " (bit 5-17)");
         System.out.println("Initial value: " + value + " (bit 18-27)");
@@ -242,14 +244,10 @@ public class Compressor {
         int maxGrowthValue = (int)Math.pow(2.0, compressedPackage.getGrowthBits()-1.0)-1;
         int minGrowthValue = -(int)Math.pow(2.0, compressedPackage.getGrowthBits()-1.0);
 
-        System.out.println("\n\n\nHEADER 28 bit:");
-        System.out.println("Mode: MIXED (bit 0-1) ");
-        System.out.println("Bits for growth: " + compressedPackage.getGrowthBits() + " (bit 2-4)");
+        System.out.println("\n\nMode: MIXED (bit 0-1) ");
+        System.out.println("Bits for growth: " + compressedPackage.getGrowthBits() + " (bit 2-4)   minGrowthValue = " + minGrowthValue + "   maxGrowthValue = " + maxGrowthValue);
         System.out.println("Length: " + compressedPackage.getDataCount() + " (bit 5-17)");
         System.out.println("Initial value: " + value + " (bit 18-27)");
-
-        System.out.println("\nminGrowthValue = " + minGrowthValue);
-        System.out.println("maxGrowthValue = " + maxGrowthValue);
 
         int growth;
         for (int i = 1; i <= compressedPackage.getDataCount(); i++) {
@@ -268,9 +266,7 @@ public class Compressor {
     }
 
     private void compressValuesMode(CompressedPackage compressedPackage, short[] data){
-
-        System.out.println("\n\n\nHEADER 15 bit:");
-        System.out.println("Mode: VALUES (bit 0-1) ");
+        System.out.println("\n\nMode: VALUES (bit 0-1) ");
         System.out.println("Length: " + compressedPackage.getDataCount() + " (bit 2-14)");
 
         for (int i = 0; i < compressedPackage.getDataCount(); i++) {

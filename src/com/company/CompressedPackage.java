@@ -6,7 +6,6 @@ public class CompressedPackage {
     private BitSet data;
     private CompressMode mode;
     private int dataCount;
-
     private int growthBits;
 
     public CompressMode getMode() {
@@ -26,7 +25,6 @@ public class CompressedPackage {
         this.dataCount = dataCount;
         this.growthBits = growthBits;
     }
-
 
     public CompressedPackage() {
 
