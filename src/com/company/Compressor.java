@@ -52,22 +52,30 @@ public class Compressor {
         calculateDataCountResult result = new calculateDataCountResult();
         int[] hist = new int[HIST_SIZE];
         int headerSize = 0;
+        int dataSize;
+        int growthBits = 0;
         short value;
         boolean progress;
 
         switch (mode) {
             case GROWTHS:
+                System.out.println("\n\n\nGROWTHS MODE CALCULATE:");
                 headerSize = 28;
                 value = data[0];
-                int dataSize;
+
                 for (int i = 1; i < data.length; i++) {
                     progress = false;
                     hist[getBitsForGrowth(data[i] - value)-1]++;
-                    int growthBits = getMaxBits(hist) +1;
+                    growthBits = getMaxBits(hist) +1; // +1 na znak
+
+                    System.out.print("\nhist = " + Arrays.toString(hist));
+                    System.out.print("\n  growthBits = " + growthBits);
+
                     dataSize = growthBits * i;
                     if (headerSize + dataSize < maxPackageSize) {
                         result.growthBitsNum = growthBits;
-                        result.dataCount = i; // +1 bo pierwsza wartość jest już w nagłówku, -1 bo ostatnia wartość się nie zmieściła
+                        result.dataCount = i;
+                        result.packageSize = headerSize + dataSize;
                         progress = true;
                     }
                     value = data[i];
@@ -75,15 +83,14 @@ public class Compressor {
                 }
 
                 return result;
-            //break;
 
             case MIXED:
+                System.out.println("\n\n\nMIXED MODE CALCULATE:");
                 headerSize = 28;
-
                 value = data[0];
                 for (int i = 1; i < data.length; i++) {
                     progress = false;
-                    System.out.println("\n\n\ni = " + i);
+                    System.out.println("\n\ni = " + i);
 //                    System.out.println("\ndata[i] = " + data[i] +  "   value = " + value);
 //                    System.out.println("getBitsForGrowth(data[i] - value) = " + getBitsForGrowth(data[i] - value));
                     hist[getBitsForGrowth(data[i] - value)-1]++;
@@ -93,20 +100,24 @@ public class Compressor {
                     for (int j = 0; j < HIST_SIZE; j++) {
                         int constantValues = getValuesCountAbove(hist, j);
                         int growths = i - constantValues;
-                        int size = constantValues * (10 + 1) // +1 bo jeden bit na typ wartości
-                                + growths * (j +1 +1); // +1 bo dla j=0 zajmuje 1 bit, +1 na znak, +1 bo jeden bit na typ wartości
+
+                        growthBits  = j +1 +1; // +1 bo dla j=0 zajmuje 1 bit, +1 na znak
+
+                        dataSize = constantValues * (10 + 1) // +1 bo jeden bit na typ wartości
+                                + growths * (growthBits +1); // +1 bo jeden bit na typ wartości
 
                         System.out.print("\n  j = " + j);
                         System.out.print("  constantValues = " + constantValues);
                         System.out.print("  growths = " + growths);
-                        System.out.print("  size = " + size);
+                        System.out.print("  size = " + dataSize);
 
-                        if (i > result.dataCount && size + headerSize <= maxPackageSize) {
+                        if (i > result.dataCount && dataSize + headerSize <= maxPackageSize) {
                             System.out.print("\n\t\t\tNowy max = " + i);
                             result.dataCount = i;
-                            result.growthBitsNum = j +1 +1; // +1 bo dla j=0 zajmuje 1 bit, +1 na znak
+                            result.growthBitsNum = growthBits;
                             result.constantValuesNum = constantValues;
                             result.growthValuesNum = growths;
+                            result.packageSize = headerSize + dataSize;
                             progress = true;
                         }
                     }
@@ -115,12 +126,14 @@ public class Compressor {
                     if(!progress) break; // jeśli w tym przebiegu pętli nie udało się poprawić wyniku, to już nigdy się nie uda
                 }
 
-                result.dataCount += 1; // +1 bo pierwsza wartość jest już w nagłówku ?
                 return result;
 
             case VALUES:
+                System.out.println("\n\n\nVALUES MODE CALCULATE:");
                 headerSize = 15;
                 result.dataCount = Math.min( ((maxPackageSize - headerSize) / 10), data.length);
+                dataSize = result.dataCount * 10;
+                result.packageSize = dataSize + headerSize;
                 return result;
         }
         return null;
@@ -128,12 +141,14 @@ public class Compressor {
 
     private class calculateDataCountResult{
         public int dataCount = 0;
+        public int packageSize = 0;
         public int growthBitsNum = 0;
         public int growthValuesNum = 0;
         public int constantValuesNum = 0;
 
         public void print(){
             System.out.println("dataCount = " + dataCount);
+            System.out.println("packageSize = " + packageSize);
             System.out.println("growthBitsNum = " + growthBitsNum);
             System.out.println("growthValuesNum = " + growthValuesNum);
             System.out.println("constantValuesNum = " + constantValuesNum);
@@ -143,7 +158,7 @@ public class Compressor {
     private static int getMaxBits(int[] hist) {
         for (int i = HIST_SIZE-1; i >= 0; i--) {
             if (hist[i] > 0) {
-                return i;
+                return i +1; // +1 bo dla hist[0] potrzeba już jednego bitu
             }
         }
         return 0;
@@ -258,7 +273,7 @@ public class Compressor {
         System.out.println("Mode: VALUES (bit 0-1) ");
         System.out.println("Length: " + compressedPackage.getDataCount() + " (bit 2-14)");
 
-        for (int i = 1; i < compressedPackage.getDataCount(); i++) {
+        for (int i = 0; i < compressedPackage.getDataCount(); i++) {
             System.out.println("Value: " + data[i]);
         }
     }
