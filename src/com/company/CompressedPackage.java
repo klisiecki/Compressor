@@ -8,7 +8,24 @@ public class CompressedPackage {
     private int dataCount;
 
     private int growthBits;
-    private short firstValue;
+
+    public CompressMode getMode() {
+        return mode;
+    }
+
+    public int getDataCount() {
+        return dataCount;
+    }
+
+    public int getGrowthBits() {
+        return growthBits;
+    }
+
+    public void initialize(CompressMode mode, int dataCount, int growthBits) {
+        this.mode = mode;
+        this.dataCount = dataCount;
+        this.growthBits = growthBits;
+    }
 
 
     public CompressedPackage() {
