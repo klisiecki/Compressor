@@ -1,5 +1,7 @@
 package com.company;
 
+import java.util.BitSet;
+
 public class Compressor {
     private static final int HIST_SIZE = 10;
 
@@ -201,11 +203,11 @@ public class Compressor {
             if (bit > 0) { //if ((growthShort & (1 << i)) > 0) {
 //                System.out.println();
 //                return growthShort < 0 ? i + 1 : i;
-                return i+1;
+                return i+2;
             }
         }
 //        System.out.println();
-        return 0;
+        return 1;
     }
 
     public void compress(CompressedPackage compressedPackage, short[] data){
@@ -229,14 +231,64 @@ public class Compressor {
         System.out.println("Length: " + compressedPackage.getDataCount() + " (bit 5-17)");
         System.out.println("Initial value: " + value + " (bit 18-27)");
 
-        int growth;
+        short growth;
         for (int i = 1; i <= compressedPackage.getDataCount(); i++) {
-            growth = data[i] - value;
+            growth = (short) (data[i] - value);
             System.out.println("Growth: " + growth + "   (" + data[i] + ")");
 
             value = data[i];
         }
 
+        short growths = (short) compressedPackage.getGrowthBits();
+        short dataCount = (short) compressedPackage.getDataCount();
+
+        BitSet result = new BitSet();
+        result.clear();
+        result.set(1,true);
+        result.set(0,false);
+
+        addToBitSet(result, 2, 4, growths);
+        addToBitSet(result, 5, 17, dataCount);
+        addToBitSet(result, 18, 27, data[0]);
+
+        int dataBits = compressedPackage.getGrowthBits();
+        value = data[0];
+        int i;
+        for (i = 1; i <= compressedPackage.getDataCount(); i++) {
+            growth = (short) (data[i] - value);
+            int bit = (i-1) * dataBits + 28;
+            System.out.println("bit = " + bit);
+            addConversedToBitSet(result, bit, bit + dataBits, growth);
+            value = data[i];
+        }
+
+
+        System.out.println("result: " + result);
+        print(result);
+    }
+
+    private void addToBitSet(BitSet bitSet, int from, int to, short value) {
+        for (int i = from; i <= to; i++) {
+            if ((value & (1 << i-from)) > 0) {
+                bitSet.set(i);
+            } else {
+                bitSet.clear(i);
+            }
+        }
+    }
+
+    private void addConversedToBitSet(BitSet bitSet, int from, int to, short value) {
+        if (value < 0) {
+            value = (short) ~value;
+            bitSet.set(from);
+        }
+        addToBitSet(bitSet, from+1, to, value);
+    }
+
+    private void print(BitSet bitSet) {
+        for (int i = 0; i < bitSet.length(); i++) {
+            System.out.print(bitSet.get(i) ? "1" : "0");
+        }
     }
 
     private void compressMixedMode(CompressedPackage compressedPackage, short[] data){
@@ -249,9 +301,9 @@ public class Compressor {
         System.out.println("Length: " + compressedPackage.getDataCount() + " (bit 5-17)");
         System.out.println("Initial value: " + value + " (bit 18-27)");
 
-        int growth;
+        short growth;
         for (int i = 1; i <= compressedPackage.getDataCount(); i++) {
-            growth = data[i] - value;
+            growth = (short) (data[i] - value);
 
             if(growth<=maxGrowthValue && growth>=minGrowthValue) {
                 System.out.println("Growth: " + growth + "   (" + data[i] + ")");
@@ -263,7 +315,38 @@ public class Compressor {
             value = data[i];
         }
 
+        short growths = (short) compressedPackage.getGrowthBits();
+        short dataCount = (short) compressedPackage.getDataCount();
+
+        BitSet result = new BitSet();
+        result.clear();
+        result.set(1,true);
+        result.set(1,false);
+
+        addToBitSet(result, 2, 4, growths);
+        addToBitSet(result, 5, 17, dataCount);
+        addToBitSet(result, 18, 27, data[0]);
+
+        int dataBits = compressedPackage.getGrowthBits() + 1;
+        value = data[0];
+
+        for (int i = 1; i <= compressedPackage.getDataCount(); i++) {
+            growth = (short) (data[i] - value);
+            int bit = (i-1) * dataBits + 28;
+            if (getBitsForGrowth(growth) > compressedPackage.getGrowthBits()) {
+                result.clear(bit); //wartosc bezwzględna
+                addConversedToBitSet(result, bit+1, bit + dataBits, data[i]);
+            } else {
+                result.set(bit);
+                addConversedToBitSet(result, bit + 1, bit + dataBits + 1, growth);
+                value = data[i];
+            }
+        }
+
+        System.out.println("result: " + result);
+        print(result);
     }
+
 
     private void compressValuesMode(CompressedPackage compressedPackage, short[] data){
         System.out.println("\n\nMode: VALUES (bit 0-1) ");
@@ -272,6 +355,23 @@ public class Compressor {
         for (int i = 0; i < compressedPackage.getDataCount(); i++) {
             System.out.println("Value: " + data[i]);
         }
-    }
 
+        short dataCount = (short) compressedPackage.getDataCount();
+
+        BitSet result = new BitSet();
+        result.clear();
+        result.set(0,true);
+        result.set(1,false);
+
+        addToBitSet(result, 2, 14, dataCount);
+
+        int dataBits = 10;
+        for (int i = 1; i <= compressedPackage.getDataCount(); i++) {
+            int bit = (i-1) * dataBits + 15;
+            addToBitSet(result, bit, bit + dataBits, data[i]);
+        }
+
+        System.out.println("result: " + result);
+        print(result);
+    }
 }
