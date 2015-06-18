@@ -4,9 +4,10 @@ public class Compressor {
     private static final int HIST_SIZE = 10;
 
 
-    public void initializePackage(PackageHeader packageHeader, short[] data, int maxPackageSize) {
+    public PackageHeader initializePackage(short[] data, int maxPackageSize) {
 //        System.out.println(Arrays.toString(createStats(data)) + "");
 //        System.out.println();
+        PackageHeader packageHeader = new PackageHeader();
 
         analyzeDataResult growthsResult = analyzeDataGrowthsMode(data, maxPackageSize);
         analyzeDataResult mixedResult = analyzeDataMixedMode(data, maxPackageSize);
@@ -20,12 +21,12 @@ public class Compressor {
         valuesResult.print();
 
         // Tylko tymczasowo:
-        packageHeader.initialize(CompressMode.GROWTHS, growthsResult.dataCount, growthsResult.growthBits);
-        compress(packageHeader, data);
-        packageHeader.initialize(CompressMode.MIXED, mixedResult.dataCount, mixedResult.growthBits);
-        compress(packageHeader, data);
+//        packageHeader.initialize(CompressMode.GROWTHS, growthsResult.dataCount, growthsResult.growthBits);
+//        compress(packageHeader, data);
+//        packageHeader.initialize(CompressMode.MIXED, mixedResult.dataCount, mixedResult.growthBits);
+//        compress(packageHeader, data);
         packageHeader.initialize(CompressMode.VALUES, valuesResult.dataCount, valuesResult.growthBits);
-        compress(packageHeader, data);
+//        compress(packageHeader, data);
 
         // Potem to odkomentować:
 //        if(growthsResult.dataCount >= mixedResult.dataCount
@@ -39,7 +40,7 @@ public class Compressor {
 //            compressedPackage.initialize(CompressMode.VALUES, valuesResult.dataCount, valuesResult.growthBits);
 //        }
 
-        return;
+        return packageHeader;
     }
 
 
@@ -208,20 +209,21 @@ public class Compressor {
         return 1;
     }
 
-    public void compress(PackageHeader packageHeader, short[] data){
+    public CustomBitSet compress(PackageHeader packageHeader, short[] data){
 
         if(packageHeader.getMode() == CompressMode.GROWTHS){
-            compressGrowthsMode(packageHeader,data);
+            return compressGrowthsMode(packageHeader, data);
         }
         else if(packageHeader.getMode() == CompressMode.MIXED){
-            compressMixedMode(packageHeader,data);
+            return compressMixedMode(packageHeader,data);
         }
         else if(packageHeader.getMode() == CompressMode.VALUES){
-            compressValuesMode(packageHeader,data);
+            return compressValuesMode(packageHeader,data);
         }
+        return null;
     }
 
-    private void compressGrowthsMode(PackageHeader packageHeader, short[] data){
+    private CustomBitSet compressGrowthsMode(PackageHeader packageHeader, short[] data){
         short value = data[0];
 
         System.out.println("\n\nMode: GROWTHS (bit 0-1) ");
@@ -260,14 +262,13 @@ public class Compressor {
             value = data[i];
         }
 
-
-        System.out.println("result: " + result);
         result.print();
+        return result;
     }
 
 
 
-    private void compressMixedMode(PackageHeader packageHeader, short[] data){
+    private CustomBitSet compressMixedMode(PackageHeader packageHeader, short[] data){
         short value = data[0];
         int maxGrowthValue = (int)Math.pow(2.0, packageHeader.getGrowthBits()-1.0)-1;
         int minGrowthValue = -(int)Math.pow(2.0, packageHeader.getGrowthBits()-1.0);
@@ -319,12 +320,12 @@ public class Compressor {
             }
         }
 
-        System.out.println("result: " + result);
         result.print();
+        return result;
     }
 
 
-    private void compressValuesMode(PackageHeader packageHeader, short[] data){
+    private CustomBitSet compressValuesMode(PackageHeader packageHeader, short[] data){
         System.out.println("\n\nMode: VALUES (bit 0-1) ");
         System.out.println("Length: " + packageHeader.getDataCount() + " (bit 2-14)");
 
@@ -347,7 +348,7 @@ public class Compressor {
             result.add(bit, bit + dataBits, data[i]);
         }
 
-        System.out.println("result: " + result);
         result.print();
+        return result;
     }
 }

@@ -5,6 +5,16 @@ import java.util.BitSet;
 
 public class CustomBitSet extends BitSet {
 
+    public CustomBitSet(BitSet bitSet) {
+        for (int i = 0; i < bitSet.size(); i++) {
+            set(i, bitSet.get(i));
+        }
+    }
+
+    public CustomBitSet() {
+
+    }
+
     public void print() {
         for (int i = 0; i < length(); i++) {
             System.out.print(get(i) ? "1" : "0");
