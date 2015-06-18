@@ -1,8 +1,6 @@
 package com.company;
 
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -30,6 +28,17 @@ public class Main {
             result.print();
             System.out.println();
             bitSet.print();
+            objectOutputStream.close();
+            out.close();
+
+            FileInputStream in = new FileInputStream("out.out");
+            ObjectInputStream objectInputStream = new ObjectInputStream(in);
+            byte[] readTab = new byte[9];
+
+//            System.out.println(objectInputStream.readByte());
+            objectInputStream.readFully(readTab);
+            System.out.println();
+            System.out.println("Arrays.toString(readTab) = " + Arrays.toString(readTab));
 
         } catch (IOException e) {
             e.printStackTrace();
