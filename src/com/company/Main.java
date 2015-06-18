@@ -22,24 +22,33 @@ public class Main {
             System.out.println();
             byte[] tab2 = result.toByteArray();
             System.out.println("result.toByteArray() = " + Arrays.toString(tab2));
-            CustomBitSet bitSet =  new CustomBitSet(BitSet.valueOf(tab2));
             System.out.println("result = " + result);
-            System.out.println("bitSet = " + bitSet);
             result.print();
             System.out.println();
-            bitSet.print();
             objectOutputStream.close();
             out.close();
 
             FileInputStream in = new FileInputStream("out.out");
             ObjectInputStream objectInputStream = new ObjectInputStream(in);
-            byte[] readTab = new byte[9];
 
-//            System.out.println(objectInputStream.readByte());
-//            objectInputStream.readFully(readTab);
-//            System.out.println();
-//            System.out.println("Arrays.toString(readTab) = " + Arrays.toString(readTab));
+            ArrayList<Byte> data = new ArrayList<Byte>();
+            Byte b;
+            try {
+                while ((b = objectInputStream.readByte()) != null) {
+                    data.add(b);
+                }
+            } catch (EOFException e) {
+                objectInputStream.close();
+                in.close();
+            }
+            byte[] readTab = new byte[data.size()];
+            for (int i = 0; i < data.size(); i++) {
+                readTab[i] = data.get(i);
+            }
 
+            System.out.println();
+            System.out.println("Arrays.toString(readTab) = " + Arrays.toString(readTab));
+            CustomBitSet bitSet =  new CustomBitSet(BitSet.valueOf(readTab));
             compressor.decompress(bitSet);
 
         } catch (IOException e) {
