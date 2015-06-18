@@ -21,11 +21,11 @@ public class Compressor {
         valuesResult.print();
 
         // Tylko tymczasowo:
-//        packageHeader.initialize(CompressMode.GROWTHS, growthsResult.dataCount, growthsResult.growthBits);
+        packageHeader.initialize(CompressMode.GROWTHS, growthsResult.dataCount, growthsResult.growthBits);
 //        compress(packageHeader, data);
-//        packageHeader.initialize(CompressMode.MIXED, mixedResult.dataCount, mixedResult.growthBits);
+        packageHeader.initialize(CompressMode.MIXED, mixedResult.dataCount, mixedResult.growthBits);
 //        compress(packageHeader, data);
-        packageHeader.initialize(CompressMode.VALUES, valuesResult.dataCount, valuesResult.growthBits);
+//        packageHeader.initialize(CompressMode.VALUES, valuesResult.dataCount, valuesResult.growthBits);
 //        compress(packageHeader, data);
 
         // Potem to odkomentować:
@@ -244,8 +244,8 @@ public class Compressor {
 
         CustomBitSet result = new CustomBitSet();
         result.clear();
-        result.set(1,true);
-        result.set(0,false);
+        result.set(0,true);
+        result.set(1,false);
 
         result.add(2, 4, growths);
         result.add(5, 17, dataCount);
@@ -297,8 +297,8 @@ public class Compressor {
 
         CustomBitSet result = new CustomBitSet();
         result.clear();
+        result.set(0,true);
         result.set(1,true);
-        result.set(1,false);
 
         result.add(2, 4, growths);
         result.add(5, 17, dataCount);
@@ -306,18 +306,19 @@ public class Compressor {
 
         int dataBits = packageHeader.getGrowthBits() + 1;
         value = data[0];
-
+        int bit = 28;
         for (int i = 1; i <= packageHeader.getDataCount(); i++) {
             growth = (short) (data[i] - value);
-            int bit = (i-1) * dataBits + 28;
             if (getBitsForGrowth(growth) > packageHeader.getGrowthBits()) {
                 result.clear(bit); //wartosc bezwzględna
-                result.addConversed(bit + 1, bit + dataBits, data[i]);
+                result.add(bit + 1, bit + 10, data[i]);
+                bit += 10 + 1;
             } else {
                 result.set(bit);
                 result.addConversed(bit + 1, bit + dataBits + 1, growth);
-                value = data[i];
+                bit += dataBits;
             }
+            value = data[i];
         }
 
         result.print();
@@ -337,18 +338,101 @@ public class Compressor {
 
         CustomBitSet result = new CustomBitSet();
         result.clear();
-        result.set(0,true);
-        result.set(1,false);
+        result.set(0,false);
+        result.set(1,true);
 
         result.add(2, 14, dataCount);
 
         int dataBits = 10;
-        for (int i = 1; i <= packageHeader.getDataCount(); i++) {
-            int bit = (i-1) * dataBits + 15;
-            result.add(bit, bit + dataBits, data[i]);
+        for (int i = 0; i < packageHeader.getDataCount(); i++) {
+            int bit = (i) * dataBits + 15;
+            result.add(bit, bit + dataBits-1, data[i]);
         }
 
         result.print();
         return result;
     }
+
+    public short[] decompress(CustomBitSet bitSet) {
+        boolean b0 = bitSet.get(0);
+        boolean b1 = bitSet.get(1);
+        System.out.println("decompressing: " );
+        bitSet.print();
+        if (b0 && !b1) {
+            System.out.println("growths");
+            return decompressGrowthsMode(bitSet);
+        } else if (b0 && b1) {
+            System.out.println("mixed");
+            decompressMixedMode(bitSet);
+        } else if (!b0 && b1) {
+            System.out.println("values");
+            return decompressValuesMode(bitSet);
+        } else {
+            throw new RuntimeException("Data header error");
+        }
+        return null;
+    }
+
+    private short[] decompressGrowthsMode(CustomBitSet bitSet) {
+        short bitsForGrowth = bitSet.getShort(2, 4);
+        System.out.println("bitsForGrowth = " + bitsForGrowth);
+        short dataCount = bitSet.getShort(5, 17);
+        System.out.println("dataCount = " + dataCount);
+        short value = bitSet.getShort(18, 27);
+        System.out.println("value = " + value);
+        short[] tab = new short[dataCount+1];
+        tab[0] = value;
+        for (int i = 1; i <= dataCount; i++) {
+            short growth = bitSet.getConversed(28 + (i - 1) * bitsForGrowth, 28 + i * bitsForGrowth - 1);
+            System.out.println("growth = " + growth);
+            tab[i] = (short) (tab[i-1] + growth);
+            System.out.println("tab[i] = " + tab[i]);
+        }
+        return tab;
+    }
+
+    private short[] decompressMixedMode(CustomBitSet bitSet) {
+        short bitsForGrowth = bitSet.getShort(2, 4);
+        System.out.println("bitsForGrowth = " + bitsForGrowth);
+        short dataCount = bitSet.getShort(5, 17);
+        System.out.println("dataCount = " + dataCount);
+        short value = bitSet.getShort(18, 27);
+        System.out.println("value = " + value);
+        short[] tab = new short[dataCount+1];
+        tab[0] = value;
+        int bit = 28;
+        for (int i = 1; i <= dataCount; i++) {
+
+            boolean type = bitSet.get(bit);
+            if (!type) {
+                //wartosc bezwzgledna
+                tab[i] = bitSet.getShort(bit + 1, bit + 10);
+                System.out.println("tab[i] = " + tab[i]);
+                bit += 10 + 1;
+
+            } else {
+                //przyrost
+                tab[i] = (short) (tab[i-1] + bitSet.getConversed(bit+1, bit + bitsForGrowth));
+                new CustomBitSet(bitSet.get(bit+1,bit+bitsForGrowth)).print();
+                System.out.println();
+                System.out.println("g = " + bitSet.getConversed(bit + 1, bit + bitsForGrowth));
+                System.out.println("tab[i[ = " + tab[i]);
+                bit += bitsForGrowth + 1;
+            }
+        }
+        return tab;
+    }
+
+    private short[] decompressValuesMode(CustomBitSet bitSet) {
+        short dataCount = bitSet.getShort(2, 14);
+        System.out.println("dataCount = " + dataCount);
+        short[] tab = new short[dataCount];
+        for (int i = 0; i < dataCount; i++) {
+            tab[i] = bitSet.getShort(15 + i * 10, 15 + i * 10 + 9);
+            System.out.println("tab[i] = " + tab[i]);
+        }
+
+        return tab;
+    }
+
 }

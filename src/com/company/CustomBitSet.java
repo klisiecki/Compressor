@@ -17,6 +17,9 @@ public class CustomBitSet extends BitSet {
 
     public void print() {
         for (int i = 0; i < length(); i++) {
+            if (i % 8 == 0) {
+                System.out.print(" ");
+            }
             System.out.print(get(i) ? "1" : "0");
         }
     }
@@ -29,6 +32,26 @@ public class CustomBitSet extends BitSet {
                 clear(i);
             }
         }
+    }
+
+    public short getShort(int from, int to) {
+        short result = 0;
+        for (int i = from; i <= to; i++) {
+            if (get(i)) {
+                result += Math.pow(2, i-from);
+            }
+        }
+
+        return result;
+    }
+
+    public short getConversed(int from, int to) {
+        if (get(from)) {
+            return (short) ~getShort(from+1, to);
+        } else {
+            return getShort(from+1, to);
+        }
+
     }
 
     public void addConversed(int from, int to, short value) {

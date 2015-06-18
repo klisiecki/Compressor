@@ -36,9 +36,11 @@ public class Main {
             byte[] readTab = new byte[9];
 
 //            System.out.println(objectInputStream.readByte());
-            objectInputStream.readFully(readTab);
-            System.out.println();
-            System.out.println("Arrays.toString(readTab) = " + Arrays.toString(readTab));
+//            objectInputStream.readFully(readTab);
+//            System.out.println();
+//            System.out.println("Arrays.toString(readTab) = " + Arrays.toString(readTab));
+
+            compressor.decompress(bitSet);
 
         } catch (IOException e) {
             e.printStackTrace();
