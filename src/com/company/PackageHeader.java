@@ -1,9 +1,7 @@
 package com.company;
 
-import java.util.BitSet;
+public class PackageHeader {
 
-public class CompressedPackage {
-    private BitSet data;
     private CompressMode mode;
     private int dataCount;
     private int growthBits;
@@ -26,7 +24,7 @@ public class CompressedPackage {
         this.growthBits = growthBits;
     }
 
-    public CompressedPackage() {
+    public PackageHeader() {
 
     }
 }

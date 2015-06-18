@@ -9,7 +9,7 @@ public class Main {
         try {
             short[] tab = InputParser.parseFile("data/4bit.in");
 
-            CompressedPackage pckg = new CompressedPackage();
+            PackageHeader pckg = new PackageHeader();
             Compressor compressor = new Compressor();
 
             compressor.initializePackage(pckg, tab, 80);
