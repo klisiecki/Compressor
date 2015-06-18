@@ -9,9 +9,9 @@ public class Compressor {
 //        System.out.println();
         PackageHeader packageHeader = new PackageHeader();
 
-        analyzeDataResult growthsResult = analyzeDataGrowthsMode(data, maxPackageSize);
-        analyzeDataResult mixedResult = analyzeDataMixedMode(data, maxPackageSize);
-        analyzeDataResult valuesResult = analyzeDataValuesMode(data, maxPackageSize);
+        AnalyzeDataResult growthsResult = analyzeDataGrowthsMode(data, maxPackageSize);
+        AnalyzeDataResult mixedResult = analyzeDataMixedMode(data, maxPackageSize);
+        AnalyzeDataResult valuesResult = analyzeDataValuesMode(data, maxPackageSize);
 
         System.out.println("\n\nGrowths mode statistics:");
         growthsResult.print();
@@ -44,10 +44,10 @@ public class Compressor {
     }
 
 
-    private analyzeDataResult analyzeDataGrowthsMode(short[] data, int maxPackageSize){
+    private AnalyzeDataResult analyzeDataGrowthsMode(short[] data, int maxPackageSize){
 //        System.out.println("\n\n\nGROWTHS MODE CALCULATE:");
 
-        analyzeDataResult result = new analyzeDataResult();
+        AnalyzeDataResult result = new AnalyzeDataResult();
         int[] hist = new int[HIST_SIZE];
         int headerSize = 28;
         int dataSize = 0;
@@ -79,10 +79,10 @@ public class Compressor {
     }
 
 
-    private analyzeDataResult analyzeDataMixedMode(short[] data, int maxPackageSize) {
+    private AnalyzeDataResult analyzeDataMixedMode(short[] data, int maxPackageSize) {
 //        System.out.println("\n\n\nMIXED MODE CALCULATE:");
 
-        analyzeDataResult result = new analyzeDataResult();
+        AnalyzeDataResult result = new AnalyzeDataResult();
         int[] hist = new int[HIST_SIZE];
         int headerSize = 28;
         int dataSize = 0;
@@ -130,10 +130,10 @@ public class Compressor {
         return result;
     }
 
-    private analyzeDataResult analyzeDataValuesMode(short[] data, int maxPackageSize) {
+    private AnalyzeDataResult analyzeDataValuesMode(short[] data, int maxPackageSize) {
 //        System.out.println("\n\n\nVALUES MODE CALCULATE:");
 
-        analyzeDataResult result = new analyzeDataResult();
+        AnalyzeDataResult result = new AnalyzeDataResult();
         int headerSize = 15;
         int dataSize = 0;
 
@@ -143,7 +143,7 @@ public class Compressor {
         return result;
     }
 
-    private class analyzeDataResult {
+    private class AnalyzeDataResult {
         public int dataCount = 0;
         public int packageSize = 0;
         public int growthBits = 0;
