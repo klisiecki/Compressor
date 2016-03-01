@@ -7,6 +7,27 @@ import java.util.List;
 
 public class InputParser {
 
+    public static short[] parseRawFile(String fileName) throws IOException {
+        BufferedReader reader = null;
+        try {
+            InputStream inputStream = new FileInputStream(fileName);
+            InputStreamReader isr = new InputStreamReader(inputStream, Charset.forName("UTF-8"));
+            reader = new BufferedReader(isr);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+
+        ArrayList<Short> result = new ArrayList<Short>();
+
+        String line;
+        while ((line = reader.readLine()) != null) {
+            Float value = Float.parseFloat(line.split("\t")[1]);
+            System.out.println(line + " (" + value +")");
+            result.add((short) (value * 100));
+        }
+        return toShortArray(result);
+    }
+
     public static short[] parseFile(String fileName) throws IOException {
         BufferedReader reader = null;
         try {
