@@ -2,16 +2,20 @@ package com.company;
 
 public class Compressor {
     private static final int HIST_SIZE = 10;
+    private PackageHeader header;
+    private short[] inputData;
+    private int maxPackageSize;
 
-
-    public PackageHeader initializePackage(short[] data, int maxPackageSize) {
-//        System.out.println(Arrays.toString(createStats(data)) + "");
+    public void initializePackage(short[] data, int maxPackageSize) {
+//        System.out.println(Arrays.toString(createStats(inputData)) + "");
 //        System.out.println();
-        PackageHeader packageHeader = new PackageHeader();
+        this.header = new PackageHeader();
+        this.inputData = data;
+        this.maxPackageSize = maxPackageSize;
 
-        AnalyzeDataResult growthsResult = analyzeDataGrowthsMode(data, maxPackageSize);
-        AnalyzeDataResult mixedResult = analyzeDataMixedMode(data, maxPackageSize);
-        AnalyzeDataResult valuesResult = analyzeDataValuesMode(data, maxPackageSize);
+        AnalyzeDataResult growthsResult = analyzeDataGrowthsMode();
+        AnalyzeDataResult mixedResult = analyzeDataMixedMode();
+        AnalyzeDataResult valuesResult = analyzeDataValuesMode();
 
         System.out.println("\n\nGrowths mode statistics:");
         growthsResult.print();
@@ -21,28 +25,23 @@ public class Compressor {
         valuesResult.print();
 
         // Tylko tymczasowo:
-//        packageHeader.initialize(CompressMode.GROWTHS, growthsResult.dataCount, growthsResult.growthBits);
-//        compress(packageHeader, data);
-        //       packageHeader.initialize(CompressMode.MIXED, mixedResult.dataCount, mixedResult.growthBits);
-//        compress(packageHeader, data);
+//        header.initialize(CompressMode.GROWTHS, growthsResult.dataCount, growthsResult.growthBits);
+        header.initialize(CompressMode.MIXED, mixedResult.dataCount, mixedResult.growthBits);
 //        packageHeader.initialize(CompressMode.VALUES, valuesResult.dataCount, valuesResult.growthBits);
-//        compress(packageHeader, data);
 
         // Potem to odkomentować:
-        if (growthsResult.dataCount + 1 >= mixedResult.dataCount + 1
-                && growthsResult.dataCount + 1 >= valuesResult.dataCount) { // growths mode
-            packageHeader.initialize(CompressMode.GROWTHS, growthsResult.dataCount, growthsResult.growthBits);
-        } else if (mixedResult.dataCount + 1 >= valuesResult.dataCount) { // mixed mode
-            packageHeader.initialize(CompressMode.MIXED, mixedResult.dataCount, mixedResult.growthBits);
-        } else { // values mode
-            packageHeader.initialize(CompressMode.VALUES, valuesResult.dataCount, valuesResult.growthBits);
-        }
-
-        return packageHeader;
+//        if (growthsResult.dataCount + 1 >= mixedResult.dataCount + 1
+//                && growthsResult.dataCount + 1 >= valuesResult.dataCount) { // growths mode
+//            header.initialize(CompressMode.GROWTHS, growthsResult.dataCount, growthsResult.growthBits);
+//        } else if (mixedResult.dataCount + 1 >= valuesResult.dataCount) { // mixed mode
+//            header.initialize(CompressMode.MIXED, mixedResult.dataCount, mixedResult.growthBits);
+//        } else { // values mode
+//            header.initialize(CompressMode.VALUES, valuesResult.dataCount, valuesResult.growthBits);
+//        }
     }
 
 
-    private AnalyzeDataResult analyzeDataGrowthsMode(short[] data, int maxPackageSize) {
+    private AnalyzeDataResult analyzeDataGrowthsMode() {
 //        System.out.println("\n\n\nGROWTHS MODE CALCULATE:");
 
         AnalyzeDataResult result = new AnalyzeDataResult();
@@ -50,12 +49,12 @@ public class Compressor {
         int headerSize = 28;
         int dataSize = 0;
         int growthBits = 0;
-        int value = data[0];
+        int value = inputData[0];
         boolean progress;
 
-        for (int i = 1; i < data.length; i++) { // pętla od 1, bo 0 trafia do nagłówka paczki
+        for (int i = 1; i < inputData.length; i++) { // pętla od 1, bo 0 trafia do nagłówka paczki
             progress = false;
-            hist[getBitsForGrowth(data[i] - value) - 1]++; // -1 żeby odwzorować [1,10] na tablicę [0,9]
+            hist[getBitsForGrowth(inputData[i] - value) - 1]++; // -1 żeby odwzorować [1,10] na tablicę [0,9]
             growthBits = getMaxBits(hist) + 1; // +1 na znak
 
 //            System.out.print("\nhist = " + Arrays.toString(hist));
@@ -68,7 +67,7 @@ public class Compressor {
                 result.packageSize = headerSize + dataSize;
                 progress = true;
             }
-            value = data[i];
+            value = inputData[i];
             if (!progress) break; // jeśli w tym przebiegu pętli nie udało się poprawić wyniku, to już nigdy się nie uda
         }
 
@@ -77,7 +76,7 @@ public class Compressor {
     }
 
 
-    private AnalyzeDataResult analyzeDataMixedMode(short[] data, int maxPackageSize) {
+    private AnalyzeDataResult analyzeDataMixedMode() {
 //        System.out.println("\n\n\nMIXED MODE CALCULATE:");
 
         AnalyzeDataResult result = new AnalyzeDataResult();
@@ -85,15 +84,15 @@ public class Compressor {
         int headerSize = 28;
         int dataSize = 0;
         int growthBits = 0;
-        int value = data[0];
+        int value = inputData[0];
         boolean progress;
 
-        for (int i = 1; i < data.length; i++) { // pętla od 1, bo 0 trafia do nagłówka paczki
+        for (int i = 1; i < inputData.length; i++) { // pętla od 1, bo 0 trafia do nagłówka paczki
             progress = false;
-            hist[getBitsForGrowth(data[i] - value) - 1]++; // -1 żeby odwzorować [1,10] na tablicę [0,9]
+            hist[getBitsForGrowth(inputData[i] - value) - 1]++; // -1 żeby odwzorować [1,10] na tablicę [0,9]
 //            System.out.println("\n\ni = " + i);
-//            System.out.println("\ndata[i] = " + data[i] +  "   value = " + value);
-//            System.out.println("getBitsForGrowth(data[i] - value) = " + getBitsForGrowth(data[i] - value));
+//            System.out.println("\ninputData[i] = " + inputData[i] +  "   value = " + value);
+//            System.out.println("getBitsForGrowth(inputData[i] - value) = " + getBitsForGrowth(inputData[i] - value));
 //            System.out.print("hist = " + Arrays.toString(hist));
 
             for (int j = 0; j < HIST_SIZE; j++) {
@@ -121,21 +120,21 @@ public class Compressor {
                 }
             }
 
-            value = data[i];
+            value = inputData[i];
             if (!progress) break; // jeśli w tym przebiegu pętli nie udało się poprawić wyniku, to już nigdy się nie uda
         }
 
         return result;
     }
 
-    private AnalyzeDataResult analyzeDataValuesMode(short[] data, int maxPackageSize) {
+    private AnalyzeDataResult analyzeDataValuesMode() {
 //        System.out.println("\n\n\nVALUES MODE CALCULATE:");
 
         AnalyzeDataResult result = new AnalyzeDataResult();
         int headerSize = 15;
         int dataSize = 0;
 
-        result.dataCount = Math.min(((maxPackageSize - headerSize) / 10), data.length);
+        result.dataCount = Math.min(((maxPackageSize - headerSize) / 10), inputData.length);
         dataSize = result.dataCount * 10;
         result.packageSize = dataSize + headerSize;
         return result;
@@ -207,14 +206,14 @@ public class Compressor {
         return 1;
     }
 
-    public CustomBitSet compress(PackageHeader packageHeader, short[] data) {
+    public CustomBitSet compress() {
 
-        if (packageHeader.getMode() == CompressMode.GROWTHS) {
-            return compressGrowthsMode(packageHeader, data);
-        } else if (packageHeader.getMode() == CompressMode.MIXED) {
-            return compressMixedMode(packageHeader, data);
-        } else if (packageHeader.getMode() == CompressMode.VALUES) {
-            return compressValuesMode(packageHeader, data);
+        if (header.getMode() == CompressMode.GROWTHS) {
+            return compressGrowthsMode(header, inputData);
+        } else if (header.getMode() == CompressMode.MIXED) {
+            return compressMixedMode(header, inputData);
+        } else if (header.getMode() == CompressMode.VALUES) {
+            return compressValuesMode(header, inputData);
         }
         return null;
     }
@@ -350,16 +349,16 @@ public class Compressor {
     public short[] decompress(CustomBitSet bitSet) {
         boolean b0 = bitSet.get(0);
         boolean b1 = bitSet.get(1);
-        System.out.println("decompressing: ");
+        System.out.println("\n\nDECOMPRESSING: ");
         bitSet.print();
         if (b0 && !b1) {
-            System.out.println("growths");
+            System.out.println("\nGROWTHS MODE\n");
             return decompressGrowthsMode(bitSet);
         } else if (b0 && b1) {
-            System.out.println("mixed");
+            System.out.println("\nMIXED MODE\n");
             decompressMixedMode(bitSet);
         } else if (!b0 && b1) {
-            System.out.println("values");
+            System.out.println("\nVALUES MODE\n");
             return decompressValuesMode(bitSet);
         } else {
             throw new RuntimeException("Data header error");
@@ -378,9 +377,8 @@ public class Compressor {
         tab[0] = value;
         for (int i = 1; i <= dataCount; i++) {
             short growth = bitSet.getConversed(29 + (i - 1) * bitsForGrowth, 29 + i * bitsForGrowth - 1);
-            System.out.println("growth = " + growth);
             tab[i] = (short) (tab[i - 1] + growth);
-            System.out.println("tab[i] = " + tab[i]);
+            System.out.println("tab[" + i + "] = " + tab[i] + " (growth = " + growth + ")");
         }
         return tab;
     }
@@ -401,16 +399,15 @@ public class Compressor {
             if (!type) {
                 //wartosc bezwzgledna
                 tab[i] = bitSet.getShort(bit + 1, bit + 10);
-                System.out.println("tab[i] = " + tab[i]);
+                System.out.println("tab[" + i + "] = " + tab[i]);
                 bit += 10 + 1;
 
             } else {
                 //przyrost
-                tab[i] = (short) (tab[i - 1] + bitSet.getConversed(bit + 1, bit + bitsForGrowth));
-                new CustomBitSet(bitSet.get(bit + 1, bit + bitsForGrowth)).print();
-                System.out.println();
-                System.out.println("g = " + bitSet.getConversed(bit + 1, bit + bitsForGrowth));
-                System.out.println("tab[i[ = " + tab[i]);
+                short growth = bitSet.getConversed(bit + 1, bit + bitsForGrowth);
+                tab[i] = (short) (tab[i - 1] + growth);
+//                new CustomBitSet(bitSet.get(bit + 1, bit + bitsForGrowth)).print(); // po cholerę ta linijka?
+                System.out.println("tab[" + i + "] = " + tab[i] + " (growth = " + growth + ")");
                 bit += bitsForGrowth + 1;
             }
         }
