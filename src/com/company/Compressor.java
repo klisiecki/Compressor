@@ -1,12 +1,16 @@
 package com.company;
 
+import static com.company.CompressMode.GROWTHS;
+import static com.company.CompressMode.MIXED;
+import static com.company.CompressMode.VALUES;
+
 public class Compressor {
     private static final int HIST_SIZE = 10;
     private PackageHeader header;
     private short[] inputData;
     private int maxPackageSize;
 
-    public void initializePackage(short[] data, int maxPackageSize) {
+    public int initializePackage(short[] data, int maxPackageSize) {
 //        System.out.println(Arrays.toString(createStats(inputData)) + "");
 //        System.out.println();
         this.header = new PackageHeader();
@@ -25,19 +29,20 @@ public class Compressor {
         valuesResult.print();
 
         // Tylko tymczasowo:
-//        header.initialize(CompressMode.GROWTHS, growthsResult.dataCount, growthsResult.growthBits);
-        header.initialize(CompressMode.MIXED, mixedResult.dataCount, mixedResult.growthBits);
-//        packageHeader.initialize(CompressMode.VALUES, valuesResult.dataCount, valuesResult.growthBits);
+//        header.initialize(GROWTHS, growthsResult.dataCount, growthsResult.growthBits);
+//        header.initialize(MIXED, mixedResult.dataCount, mixedResult.growthBits);
+//        header.initialize(VALUES, valuesResult.dataCount, valuesResult.growthBits);
 
         // Potem to odkomentować:
-//        if (growthsResult.dataCount + 1 >= mixedResult.dataCount + 1
-//                && growthsResult.dataCount + 1 >= valuesResult.dataCount) { // growths mode
-//            header.initialize(CompressMode.GROWTHS, growthsResult.dataCount, growthsResult.growthBits);
-//        } else if (mixedResult.dataCount + 1 >= valuesResult.dataCount) { // mixed mode
-//            header.initialize(CompressMode.MIXED, mixedResult.dataCount, mixedResult.growthBits);
-//        } else { // values mode
-//            header.initialize(CompressMode.VALUES, valuesResult.dataCount, valuesResult.growthBits);
-//        }
+        if (growthsResult.dataCount + 1 >= mixedResult.dataCount + 1
+                && growthsResult.dataCount + 1 >= valuesResult.dataCount) { // growths mode
+            header.initialize(GROWTHS, growthsResult.dataCount, growthsResult.growthBits);
+        } else if (mixedResult.dataCount + 1 >= valuesResult.dataCount) { // mixed mode
+            header.initialize(MIXED, mixedResult.dataCount, mixedResult.growthBits);
+        } else { // values mode
+            header.initialize(VALUES, valuesResult.dataCount, valuesResult.growthBits);
+        }
+        return header.getDataCount();
     }
 
 
@@ -208,11 +213,11 @@ public class Compressor {
 
     public CustomBitSet compress() {
 
-        if (header.getMode() == CompressMode.GROWTHS) {
+        if (header.getMode() == GROWTHS) {
             return compressGrowthsMode(header, inputData);
-        } else if (header.getMode() == CompressMode.MIXED) {
+        } else if (header.getMode() == MIXED) {
             return compressMixedMode(header, inputData);
-        } else if (header.getMode() == CompressMode.VALUES) {
+        } else if (header.getMode() == VALUES) {
             return compressValuesMode(header, inputData);
         }
         return null;

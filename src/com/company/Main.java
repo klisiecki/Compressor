@@ -11,8 +11,8 @@ public class Main {
         System.out.println(System.getProperty("user.dir"));
         try {
             Compressor compressor = new Compressor();
-            compress(compressor, "data/m7mini.txt", "data/out.out", false);
-            decompress(compressor, "data/out.out");
+            compress(compressor, "data/m7mini.txt", "data/out", false);
+            decompress(compressor, "data/out_1");
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -21,10 +21,18 @@ public class Main {
 
     private static void compress(Compressor compressor, String inFile, String outFile, Boolean isClearInput) throws IOException {
         short[] inputData = InputParser.parseFile(inFile, isClearInput);
-        compressor.initializePackage(inputData, 80);
-        CustomBitSet result = compressor.compress();
-        saveData(outFile, result);
-        printResult(result);
+        int compressedIndex = 0;
+        int iteration = 0;
+        while (compressedIndex < inputData.length - 1) {
+            short[] packageData = Arrays.copyOfRange(inputData, compressedIndex, inputData.length);
+            int countInPackage = compressor.initializePackage(packageData, 200);
+            compressedIndex += countInPackage;
+            System.out.println("compressing " + countInPackage + " data from " + compressedIndex +" index");
+            CustomBitSet result = compressor.compress();
+            saveData(outFile + "_"+iteration, result);
+            printResult(result);
+            iteration++;
+        }
     }
 
     private static void saveData(String outFile, CustomBitSet result) throws IOException {
