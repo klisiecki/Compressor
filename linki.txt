@@ -1,0 +1,19 @@
+Współczynnik kompresji = (inSize-outSize) / inSize * 100%
+
+Porównanie metod: http://www.maximumcompression.com/
+Porównanie jest na ich danych, ale są linki do programów i opisane z jakich algorytmów.
+
+RLE - Podawanie wartości i liczby jej powtórzeń, opłaca się przy bardzo wolno zmiennych
+https://pl.wikipedia.org/wiki/RLE
+
+LZ78
+https://pl.wikipedia.org/wiki/LZ78
+
+Kodowanie arytmetyczne
+https://pl.wikipedia.org/wiki/Kodowanie_arytmetyczne
+
+Kodowanie Huffmana
+https://pl.wikipedia.org/wiki/Kodowanie_Huffmana
+
+PPM
+https://pl.wikipedia.org/wiki/PPM_(kompresja)
