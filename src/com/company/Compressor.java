@@ -15,7 +15,7 @@ public class Compressor {
 //        System.out.println();
         this.header = new PackageHeader();
         this.inputData = data;
-        this.maxPackageSize = maxPackageSize;
+        this.maxPackageSize = maxPackageSize > 0 ? maxPackageSize : Integer.MAX_VALUE;
 
         AnalyzeDataResult growthsResult = analyzeDataGrowthsMode();
         AnalyzeDataResult mixedResult = analyzeDataMixedMode();

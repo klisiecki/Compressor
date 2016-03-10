@@ -1,9 +1,12 @@
 package com.company;
 
 import java.io.*;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 public class Main {
 
@@ -31,24 +34,70 @@ public class Main {
         short[] inputData = InputParser.parseFile(inFile, isClearInput);
         int compressedIndex = 0;
         int iteration = 0;
+        int resultSize = 0;
         while (compressedIndex < inputData.length - 1) {
             short[] packageData = Arrays.copyOfRange(inputData, compressedIndex, inputData.length);
             int countInPackage = compressor.initializePackage(packageData, packageSize);
             compressedIndex += countInPackage;
             System.out.println("compressing " + countInPackage + " data from " + compressedIndex +" index");
             CustomBitSet result = compressor.compress();
-            saveData(outFile + "_"+iteration, result);
+            resultSize += saveData(outFile + "_"+iteration, result);
             printResult(result);
             iteration++;
         }
+        System.out.println("Compressed file bytes: " + resultSize);
+        System.out.println("Raw file bytes: " + getRawBytes(inputData));
+        System.out.println("Zip file bytes: " + getZipBytes(inputData));
     }
 
-    private static void saveData(String outFile, CustomBitSet result) throws IOException {
-        FileOutputStream out = new FileOutputStream(outFile);
+    private static long getRawBytes(short[] data) throws IOException {
+        File testRaw = new File("testRaw");
+        FileOutputStream fs = new FileOutputStream(testRaw);
+        ObjectOutputStream oos = new ObjectOutputStream(fs);
+
+        for (short i : data) {
+            ByteBuffer buffer = ByteBuffer.allocate(2);
+            buffer.putShort(i);
+            oos.write(buffer.array());
+        }
+
+        oos.close();
+        fs.close();
+
+        long result = testRaw.length();
+        testRaw.delete();
+        return result;
+    }
+
+    private static long getZipBytes(short[] data) throws IOException {
+        File testFile = new File("test.zip");
+        FileOutputStream fs = new FileOutputStream(testFile);
+        ZipOutputStream oos = new ZipOutputStream(fs);
+        ZipEntry zipEntry = new ZipEntry("test");
+        oos.putNextEntry(zipEntry);
+
+        for (short i : data) {
+            ByteBuffer buffer = ByteBuffer.allocate(2);
+            buffer.putShort(i);
+            oos.write(buffer.array());
+        }
+
+        oos.close();
+        fs.close();
+
+        long result = testFile.length();
+        testFile.delete();
+        return result;
+    }
+
+    private static long saveData(String outFile, CustomBitSet result) throws IOException {
+        File f = new File(outFile);
+        FileOutputStream out = new FileOutputStream(f);
         ObjectOutputStream objectOutputStream = new ObjectOutputStream(out);
         objectOutputStream.write(result.toByteArray());
         objectOutputStream.close();
         out.close();
+        return f.length();
     }
 
     private static void printResult(CustomBitSet result) {
