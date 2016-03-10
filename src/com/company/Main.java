@@ -8,24 +8,32 @@ import java.util.BitSet;
 public class Main {
 
     public static void main(String[] args) {
-        System.out.println(System.getProperty("user.dir"));
+        if (args.length < 2) {
+            System.out.println("Usage:");
+            System.out.println("Compressing: inputFile outputFile packageSize");
+            System.out.println("Decompressing: -d outputFile");
+            return;
+        }
         try {
             Compressor compressor = new Compressor();
-            compress(compressor, "data/m7mini.txt", "data/out", false);
-            decompress(compressor, "data/out_1");
-
+            if ("-d".equals(args[0])) {
+                decompress(compressor, args[1]);
+            } else {
+                compress(compressor, args[0], args[1], Integer.parseInt(args[2]), false);
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    private static void compress(Compressor compressor, String inFile, String outFile, Boolean isClearInput) throws IOException {
+    private static void compress(Compressor compressor, String inFile, String outFile, int packageSize, Boolean isClearInput) throws IOException {
+        System.out.println("Compressing " + inFile + " to " + outFile + " with " + packageSize + " package sieze");
         short[] inputData = InputParser.parseFile(inFile, isClearInput);
         int compressedIndex = 0;
         int iteration = 0;
         while (compressedIndex < inputData.length - 1) {
             short[] packageData = Arrays.copyOfRange(inputData, compressedIndex, inputData.length);
-            int countInPackage = compressor.initializePackage(packageData, 200);
+            int countInPackage = compressor.initializePackage(packageData, packageSize);
             compressedIndex += countInPackage;
             System.out.println("compressing " + countInPackage + " data from " + compressedIndex +" index");
             CustomBitSet result = compressor.compress();
@@ -52,6 +60,7 @@ public class Main {
     }
 
     private static void decompress(Compressor compressor, String file) throws IOException {
+        System.out.println("Decompressing " + file);
         CustomBitSet bitSet = readCompressedFile(file);
         compressor.decompress(bitSet);
     }
