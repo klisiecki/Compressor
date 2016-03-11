@@ -28,7 +28,6 @@ public class InputParser {
                 Float valueFloat = Float.parseFloat(line.split("\t")[1]);
                 value = (short) (valueFloat * 10);
             }
-            System.out.println(line + " -> " + value);
             result.add(value);
         }
 

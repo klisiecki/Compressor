@@ -9,10 +9,15 @@ public class Compressor {
     private PackageHeader header;
     private short[] inputData;
     private int maxPackageSize;
+    private boolean verbose;
+
+    public Compressor(boolean verbose) {
+        this.verbose = verbose;
+    }
 
     public int initializePackage(short[] data, int maxPackageSize) {
-//        System.out.println(Arrays.toString(createStats(inputData)) + "");
-//        System.out.println();
+//        log(Arrays.toString(createStats(inputData)) + "");
+//        log();
         this.header = new PackageHeader();
         this.inputData = data;
         this.maxPackageSize = maxPackageSize > 0 ? maxPackageSize : Integer.MAX_VALUE;
@@ -21,11 +26,11 @@ public class Compressor {
         AnalyzeDataResult mixedResult = analyzeDataMixedMode();
         AnalyzeDataResult valuesResult = analyzeDataValuesMode();
 
-        System.out.println("\n\nGrowths mode statistics:");
+        log("\n\nGrowths mode statistics:");
         growthsResult.print();
-        System.out.println("\nMixed mode statistics:");
+        log("\nMixed mode statistics:");
         mixedResult.print();
-        System.out.println("\nValues mode statistics:");
+        log("\nValues mode statistics:");
         valuesResult.print();
 
         // Tylko tymczasowo:
@@ -47,7 +52,7 @@ public class Compressor {
 
 
     private AnalyzeDataResult analyzeDataGrowthsMode() {
-//        System.out.println("\n\n\nGROWTHS MODE CALCULATE:");
+//        log("\n\n\nGROWTHS MODE CALCULATE:");
 
         AnalyzeDataResult result = new AnalyzeDataResult();
         int[] hist = new int[HIST_SIZE];
@@ -82,7 +87,7 @@ public class Compressor {
 
 
     private AnalyzeDataResult analyzeDataMixedMode() {
-//        System.out.println("\n\n\nMIXED MODE CALCULATE:");
+//        log("\n\n\nMIXED MODE CALCULATE:");
 
         AnalyzeDataResult result = new AnalyzeDataResult();
         int[] hist = new int[HIST_SIZE];
@@ -95,9 +100,9 @@ public class Compressor {
         for (int i = 1; i < inputData.length; i++) { // pętla od 1, bo 0 trafia do nagłówka paczki
             progress = false;
             hist[getBitsForGrowth(inputData[i] - value) - 1]++; // -1 żeby odwzorować [1,10] na tablicę [0,9]
-//            System.out.println("\n\ni = " + i);
-//            System.out.println("\ninputData[i] = " + inputData[i] +  "   value = " + value);
-//            System.out.println("getBitsForGrowth(inputData[i] - value) = " + getBitsForGrowth(inputData[i] - value));
+//            log("\n\ni = " + i);
+//            log("\ninputData[i] = " + inputData[i] +  "   value = " + value);
+//            log("getBitsForGrowth(inputData[i] - value) = " + getBitsForGrowth(inputData[i] - value));
 //            System.out.print("hist = " + Arrays.toString(hist));
 
             for (int j = 0; j < HIST_SIZE; j++) {
@@ -133,7 +138,7 @@ public class Compressor {
     }
 
     private AnalyzeDataResult analyzeDataValuesMode() {
-//        System.out.println("\n\n\nVALUES MODE CALCULATE:");
+//        log("\n\n\nVALUES MODE CALCULATE:");
 
         AnalyzeDataResult result = new AnalyzeDataResult();
         int headerSize = 15;
@@ -153,11 +158,11 @@ public class Compressor {
         public int constantValuesNum = 0;
 
         public void print() {
-            System.out.println("dataCount = " + dataCount);
-            System.out.println("packageSize = " + packageSize);
-            System.out.println("growthBits = " + growthBits);
-            System.out.println("growthsValuesNum = " + growthsValuesNum);
-            System.out.println("constantValuesNum = " + constantValuesNum);
+            log("dataCount = " + dataCount);
+            log("packageSize = " + packageSize);
+            log("growthBits = " + growthBits);
+            log("growthsValuesNum = " + growthsValuesNum);
+            log("constantValuesNum = " + constantValuesNum);
         }
     }
 
@@ -200,14 +205,14 @@ public class Compressor {
         for (int i = 9; i >= 0; i--) {
             int bit = (growthShort & (1 << i));
             //System.out.print(bit > 0 ? "1" : "0");
-            //System.out.println("bit " + i + " = " + (growth & (1 << i)));
+            //log("bit " + i + " = " + (growth & (1 << i)));
             if (bit > 0) { //if ((growthShort & (1 << i)) > 0) {
-//                System.out.println();
+//                log();
 //                return growthShort < 0 ? i + 1 : i;
                 return i + 2;
             }
         }
-//        System.out.println();
+//        log();
         return 1;
     }
 
@@ -226,15 +231,15 @@ public class Compressor {
     private CustomBitSet compressGrowthsMode(PackageHeader packageHeader, short[] data) {
         short value = data[0];
 
-        System.out.println("\n\nMode: GROWTHS (bit 0-1) ");
-        System.out.println("Bits for growth: " + packageHeader.getGrowthBits() + " (bit 2-5)");
-        System.out.println("Length: " + packageHeader.getDataCount() + " (bit 6-18)");
-        System.out.println("Initial value: " + value + " (bit 19-28)");
+        log("\n\nMode: GROWTHS (bit 0-1) ");
+        log("Bits for growth: " + packageHeader.getGrowthBits() + " (bit 2-5)");
+        log("Length: " + packageHeader.getDataCount() + " (bit 6-18)");
+        log("Initial value: " + value + " (bit 19-28)");
 
         short growth;
         for (int i = 1; i <= packageHeader.getDataCount(); i++) {
             growth = (short) (data[i] - value);
-            System.out.println("Growth: " + growth + "   (" + data[i] + ")");
+            log("Growth: " + growth + "   (" + data[i] + ")");
 
             value = data[i];
         }
@@ -257,7 +262,7 @@ public class Compressor {
         for (i = 1; i <= packageHeader.getDataCount(); i++) {
             growth = (short) (data[i] - value);
             int bit = (i - 1) * dataBits + 29;
-            System.out.println("bit = " + bit);
+            log("bit = " + bit);
             result.addConversed(bit, bit + dataBits, growth);
             value = data[i];
         }
@@ -272,19 +277,19 @@ public class Compressor {
         int maxGrowthValue = (int) Math.pow(2.0, packageHeader.getGrowthBits() - 1.0) - 1;
         int minGrowthValue = -(int) Math.pow(2.0, packageHeader.getGrowthBits() - 1.0);
 
-        System.out.println("\n\nMode: MIXED (bit 0-1) ");
-        System.out.println("Bits for growth: " + packageHeader.getGrowthBits() + " (bit 2-5)   minGrowthValue = " + minGrowthValue + "   maxGrowthValue = " + maxGrowthValue);
-        System.out.println("Length: " + packageHeader.getDataCount() + " (bit 6-18)");
-        System.out.println("Initial value: " + value + " (bit 19-28)");
+        log("\n\nMode: MIXED (bit 0-1) ");
+        log("Bits for growth: " + packageHeader.getGrowthBits() + " (bit 2-5)   minGrowthValue = " + minGrowthValue + "   maxGrowthValue = " + maxGrowthValue);
+        log("Length: " + packageHeader.getDataCount() + " (bit 6-18)");
+        log("Initial value: " + value + " (bit 19-28)");
 
         short growth;
         for (int i = 1; i <= packageHeader.getDataCount(); i++) {
             growth = (short) (data[i] - value);
 
             if (growth <= maxGrowthValue && growth >= minGrowthValue) {
-                System.out.println("Growth: " + growth + "   (" + data[i] + ")");
+                log("Growth: " + growth + "   (" + data[i] + ")");
             } else {
-                System.out.println("Value: " + data[i]);
+                log("Value: " + data[i]);
             }
 
             value = data[i];
@@ -319,17 +324,17 @@ public class Compressor {
             value = data[i];
         }
 
-        result.print();
+        log(result.print());
         return result;
     }
 
 
     private CustomBitSet compressValuesMode(PackageHeader packageHeader, short[] data) {
-        System.out.println("\n\nMode: VALUES (bit 0-1) ");
-        System.out.println("Length: " + packageHeader.getDataCount() + " (bit 2-14)");
+        log("\n\nMode: VALUES (bit 0-1) ");
+        log("Length: " + packageHeader.getDataCount() + " (bit 2-14)");
 
         for (int i = 0; i < packageHeader.getDataCount(); i++) {
-            System.out.println("Value: " + data[i]);
+            log("Value: " + data[i]);
         }
 
         short dataCount = (short) packageHeader.getDataCount();
@@ -354,16 +359,16 @@ public class Compressor {
     public short[] decompress(CustomBitSet bitSet) {
         boolean b0 = bitSet.get(0);
         boolean b1 = bitSet.get(1);
-        System.out.println("\n\nDECOMPRESSING: ");
+        log("\n\nDECOMPRESSING: ");
         bitSet.print();
         if (b0 && !b1) {
-            System.out.println("\nGROWTHS MODE\n");
+            log("\nGROWTHS MODE\n");
             return decompressGrowthsMode(bitSet);
         } else if (b0 && b1) {
-            System.out.println("\nMIXED MODE\n");
+            log("\nMIXED MODE\n");
             decompressMixedMode(bitSet);
         } else if (!b0 && b1) {
-            System.out.println("\nVALUES MODE\n");
+            log("\nVALUES MODE\n");
             return decompressValuesMode(bitSet);
         } else {
             throw new RuntimeException("Data header error");
@@ -373,28 +378,28 @@ public class Compressor {
 
     private short[] decompressGrowthsMode(CustomBitSet bitSet) {
         short bitsForGrowth = bitSet.getShort(2, 5);
-        System.out.println("bitsForGrowth = " + bitsForGrowth);
+        log("bitsForGrowth = " + bitsForGrowth);
         short dataCount = bitSet.getShort(6, 18);
-        System.out.println("dataCount = " + dataCount);
+        log("dataCount = " + dataCount);
         short value = bitSet.getShort(19, 28);
-        System.out.println("value = " + value);
+        log("value = " + value);
         short[] tab = new short[dataCount + 1];
         tab[0] = value;
         for (int i = 1; i <= dataCount; i++) {
             short growth = bitSet.getConversed(29 + (i - 1) * bitsForGrowth, 29 + i * bitsForGrowth - 1);
             tab[i] = (short) (tab[i - 1] + growth);
-            System.out.println("tab[" + i + "] = " + tab[i] + " (growth = " + growth + ")");
+            log("tab[" + i + "] = " + tab[i] + " (growth = " + growth + ")");
         }
         return tab;
     }
 
     private short[] decompressMixedMode(CustomBitSet bitSet) {
         short bitsForGrowth = bitSet.getShort(2, 5);
-        System.out.println("bitsForGrowth = " + bitsForGrowth);
+        log("bitsForGrowth = " + bitsForGrowth);
         short dataCount = bitSet.getShort(6, 18);
-        System.out.println("dataCount = " + dataCount);
+        log("dataCount = " + dataCount);
         short value = bitSet.getShort(19, 28);
-        System.out.println("value = " + value);
+        log("value = " + value);
         short[] tab = new short[dataCount + 1];
         tab[0] = value;
         int bit = 29;
@@ -404,7 +409,7 @@ public class Compressor {
             if (!type) {
                 //wartosc bezwzgledna
                 tab[i] = bitSet.getShort(bit + 1, bit + 10);
-                System.out.println("tab[" + i + "] = " + tab[i]);
+                log("tab[" + i + "] = " + tab[i]);
                 bit += 10 + 1;
 
             } else {
@@ -412,7 +417,7 @@ public class Compressor {
                 short growth = bitSet.getConversed(bit + 1, bit + bitsForGrowth);
                 tab[i] = (short) (tab[i - 1] + growth);
 //                new CustomBitSet(bitSet.get(bit + 1, bit + bitsForGrowth)).print(); // po cholerę ta linijka?
-                System.out.println("tab[" + i + "] = " + tab[i] + " (growth = " + growth + ")");
+                log("tab[" + i + "] = " + tab[i] + " (growth = " + growth + ")");
                 bit += bitsForGrowth + 1;
             }
         }
@@ -421,14 +426,20 @@ public class Compressor {
 
     private short[] decompressValuesMode(CustomBitSet bitSet) {
         short dataCount = bitSet.getShort(2, 14);
-        System.out.println("dataCount = " + dataCount);
+        log("dataCount = " + dataCount);
         short[] tab = new short[dataCount];
         for (int i = 0; i < dataCount; i++) {
             tab[i] = bitSet.getShort(15 + i * 10, 15 + i * 10 + 9);
-            System.out.println("tab[i] = " + tab[i]);
+            log("tab[i] = " + tab[i]);
         }
 
         return tab;
+    }
+
+    private void log(String msg) {
+        if (verbose) {
+            System.out.println(msg);
+        }
     }
 
 }

@@ -15,13 +15,15 @@ public class CustomBitSet extends BitSet {
 
     }
 
-    public void print() {
+    public String print() {
+        StringBuffer sb = new StringBuffer();
         for (int i = 0; i < length(); i++) {
             if (i % 8 == 0) {
-                System.out.print(" ");
+                sb.append(" ");
             }
-            System.out.print(get(i) ? "1" : "0");
+            sb.append(get(i) ? "1" : "0");
         }
+        return sb.toString();
     }
 
     public void add(int from, int to, short value) {
