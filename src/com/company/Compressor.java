@@ -1,23 +1,25 @@
 package com.company;
 
+import java.util.Arrays;
+
 import static com.company.CompressMode.GROWTHS;
 import static com.company.CompressMode.MIXED;
 import static com.company.CompressMode.VALUES;
 
 public class Compressor {
+
     private static final int HIST_SIZE = 10;
     private PackageHeader header;
     private short[] inputData;
     private int maxPackageSize;
-    private boolean verbose;
+    private final boolean verbose;
 
     public Compressor(boolean verbose) {
         this.verbose = verbose;
     }
 
     public int initializePackage(short[] data, int maxPackageSize) {
-//        log(Arrays.toString(createStats(inputData)) + "");
-//        log();
+        log(Arrays.toString(createStats(data)) + "\n");
         this.header = new PackageHeader();
         this.inputData = data;
         this.maxPackageSize = maxPackageSize > 0 ? maxPackageSize : Integer.MAX_VALUE;
@@ -52,8 +54,6 @@ public class Compressor {
 
 
     private AnalyzeDataResult analyzeDataGrowthsMode() {
-//        log("\n\n\nGROWTHS MODE CALCULATE:");
-
         AnalyzeDataResult result = new AnalyzeDataResult();
         int[] hist = new int[HIST_SIZE];
         int headerSize = 28;
@@ -67,9 +67,6 @@ public class Compressor {
             hist[getBitsForGrowth(inputData[i] - value) - 1]++; // -1 żeby odwzorować [1,10] na tablicę [0,9]
             growthBits = getMaxBits(hist) + 1; // +1 na znak
 
-//            System.out.print("\nhist = " + Arrays.toString(hist));
-//            System.out.print("\n  growthBits = " + growthBits);
-
             dataSize = growthBits * i;
             if (headerSize + dataSize <= maxPackageSize) {
                 result.growthBits = growthBits;
@@ -82,13 +79,10 @@ public class Compressor {
         }
 
         return result;
-
     }
 
 
     private AnalyzeDataResult analyzeDataMixedMode() {
-//        log("\n\n\nMIXED MODE CALCULATE:");
-
         AnalyzeDataResult result = new AnalyzeDataResult();
         int[] hist = new int[HIST_SIZE];
         int headerSize = 28;
@@ -100,10 +94,6 @@ public class Compressor {
         for (int i = 1; i < inputData.length; i++) { // pętla od 1, bo 0 trafia do nagłówka paczki
             progress = false;
             hist[getBitsForGrowth(inputData[i] - value) - 1]++; // -1 żeby odwzorować [1,10] na tablicę [0,9]
-//            log("\n\ni = " + i);
-//            log("\ninputData[i] = " + inputData[i] +  "   value = " + value);
-//            log("getBitsForGrowth(inputData[i] - value) = " + getBitsForGrowth(inputData[i] - value));
-//            System.out.print("hist = " + Arrays.toString(hist));
 
             for (int j = 0; j < HIST_SIZE; j++) {
                 int constantValuesNum = getValuesCountAbove(hist, j);
@@ -114,13 +104,7 @@ public class Compressor {
                 dataSize = constantValuesNum * (10 + 1) // +1 bo jeden bit na typ wartości
                         + growthsValuesNum * (growthBits + 1); // +1 bo jeden bit na typ wartości
 
-//                System.out.print("\n  j = " + j);
-//                System.out.print("  constantValuesNum = " + constantValuesNum);
-//                System.out.print("  growthsValuesNum = " + growthsValuesNum);
-//                System.out.print("  size = " + dataSize);
-
                 if ((i > result.dataCount) && (dataSize + headerSize <= maxPackageSize)) {
-//                    System.out.print("\n\t\t\tNowy max = " + i);
                     result.dataCount = i;
                     result.growthBits = growthBits;
                     result.constantValuesNum = constantValuesNum;
@@ -138,8 +122,6 @@ public class Compressor {
     }
 
     private AnalyzeDataResult analyzeDataValuesMode() {
-//        log("\n\n\nVALUES MODE CALCULATE:");
-
         AnalyzeDataResult result = new AnalyzeDataResult();
         int headerSize = 15;
         int dataSize = 0;
@@ -194,7 +176,6 @@ public class Compressor {
     }
 
     private static int getBitsForGrowth(int growth) {
-//        System.out.print("calculating bits for " + growth + " ");
         if (growth > Short.MAX_VALUE || growth < Short.MIN_VALUE) {
             throw new RuntimeException("Growth too big");
         }
@@ -204,15 +185,10 @@ public class Compressor {
         }
         for (int i = 9; i >= 0; i--) {
             int bit = (growthShort & (1 << i));
-            //System.out.print(bit > 0 ? "1" : "0");
-            //log("bit " + i + " = " + (growth & (1 << i)));
-            if (bit > 0) { //if ((growthShort & (1 << i)) > 0) {
-//                log();
-//                return growthShort < 0 ? i + 1 : i;
+            if (bit > 0) {
                 return i + 2;
             }
         }
-//        log();
         return 1;
     }
 
@@ -267,7 +243,6 @@ public class Compressor {
             value = data[i];
         }
 
-        result.print();
         return result;
     }
 
@@ -324,7 +299,6 @@ public class Compressor {
             value = data[i];
         }
 
-        log(result.print());
         return result;
     }
 
@@ -352,7 +326,6 @@ public class Compressor {
             result.add(bit, bit + dataBits - 1, data[i]);
         }
 
-        result.print();
         return result;
     }
 

@@ -16,7 +16,7 @@ public class CustomBitSet extends BitSet {
     }
 
     public String print() {
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         for (int i = 0; i < length(); i++) {
             if (i % 8 == 0) {
                 sb.append(" ");

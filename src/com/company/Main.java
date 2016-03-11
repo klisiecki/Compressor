@@ -38,6 +38,7 @@ public class Main {
     private static void compress(Compressor compressor, String inFile, String outFile, int packageSize, Boolean isClearInput) throws IOException, CompressorException {
         System.out.println("Compressing " + inFile + " to " + outFile + " with " + packageSize + " package size");
         short[] inputData = InputParser.parseFile(inFile, isClearInput);
+        System.out.println(inputData.length + " numbers in file");
         int compressedIndex = 0;
         int iteration = 0;
         int resultSize = 0;
@@ -106,7 +107,6 @@ public class Main {
         FileOutputStream fs = new FileOutputStream(testFile);
         CompressorOutputStream oos = new CompressorStreamFactory()
                 .createCompressorOutputStream(CompressorStreamFactory.GZIP, fs);
-        ;
 
         for (short i : data) {
             ByteBuffer buffer = ByteBuffer.allocate(2);

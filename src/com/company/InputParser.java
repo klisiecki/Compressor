@@ -8,13 +8,14 @@ import java.util.List;
 public class InputParser {
 
     public static short[] parseFile(String fileName, Boolean isClearInput) throws IOException {
-        BufferedReader reader = null;
+        BufferedReader reader;
         try {
             InputStream inputStream = new FileInputStream(fileName);
             InputStreamReader isr = new InputStreamReader(inputStream, Charset.forName("UTF-8"));
             reader = new BufferedReader(isr);
         } catch (FileNotFoundException e) {
             e.printStackTrace();
+            return null;
         }
 
         ArrayList<Short> result = new ArrayList<Short>();
@@ -41,7 +42,7 @@ public class InputParser {
         return ret;
     }
 
-    public static short parseNumber(String number) {
+    private static short parseNumber(String number) {
         if (number.length() != 10) {
             System.err.println("Data error, line length = " + number.length());
         }
