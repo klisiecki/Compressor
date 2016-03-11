@@ -1,5 +1,9 @@
 package com.company;
 
+import org.apache.commons.compress.compressors.CompressorException;
+import org.apache.commons.compress.compressors.CompressorOutputStream;
+import org.apache.commons.compress.compressors.CompressorStreamFactory;
+
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -26,10 +30,12 @@ public class Main {
             }
         } catch (IOException e) {
             e.printStackTrace();
+        } catch (CompressorException e) {
+            e.printStackTrace();
         }
     }
 
-    private static void compress(Compressor compressor, String inFile, String outFile, int packageSize, Boolean isClearInput) throws IOException {
+    private static void compress(Compressor compressor, String inFile, String outFile, int packageSize, Boolean isClearInput) throws IOException, CompressorException {
         System.out.println("Compressing " + inFile + " to " + outFile + " with " + packageSize + " package sieze");
         short[] inputData = InputParser.parseFile(inFile, isClearInput);
         int compressedIndex = 0;
@@ -48,6 +54,7 @@ public class Main {
         System.out.println("Compressed file bytes: " + resultSize);
         System.out.println("Raw file bytes: " + getRawBytes(inputData));
         System.out.println("Zip file bytes: " + getZipBytes(inputData));
+        System.out.println("BZip2 file bytes: " + getBZip2Bytes(inputData));
     }
 
     private static long getRawBytes(short[] data) throws IOException {
@@ -75,6 +82,26 @@ public class Main {
         ZipOutputStream oos = new ZipOutputStream(fs);
         ZipEntry zipEntry = new ZipEntry("test");
         oos.putNextEntry(zipEntry);
+
+        for (short i : data) {
+            ByteBuffer buffer = ByteBuffer.allocate(2);
+            buffer.putShort(i);
+            oos.write(buffer.array());
+        }
+
+        oos.close();
+        fs.close();
+
+        long result = testFile.length();
+        testFile.delete();
+        return result;
+    }
+
+    private static long getBZip2Bytes(short[] data) throws IOException, CompressorException {
+        File testFile = new File("test.bzip2");
+        FileOutputStream fs = new FileOutputStream(testFile);
+        CompressorOutputStream oos = new CompressorStreamFactory()
+                .createCompressorOutputStream(CompressorStreamFactory.GZIP, fs);;
 
         for (short i : data) {
             ByteBuffer buffer = ByteBuffer.allocate(2);
