@@ -1,5 +1,6 @@
 package com.company;
 
+import com.company.external.QuickLZ.QuickLZ;
 import com.company.external.arithmetic.ArithmeticCompress;
 import com.company.external.arithmetic.BitOutputStream;
 import com.company.external.arithmetic.FrequencyTable;
@@ -9,6 +10,7 @@ import org.apache.commons.compress.compressors.CompressorStreamFactory;
 
 import java.io.*;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -68,6 +70,9 @@ public class Main {
         long time5 = System.currentTimeMillis();
         long arithmeticBytes = getArithmeticBytes("testRaw");
         System.out.println("Arithmetic file bytes: " + arithmeticBytes + " in " + (System.currentTimeMillis() - time5) + "ms");
+        long time6 = System.currentTimeMillis();
+        long dictionaryBytes = getDictionaryBytes(inputData);
+        System.out.println("Dictionary file bytes: " + dictionaryBytes + " in " + (System.currentTimeMillis() - time5) + "ms");
 
     }
 
@@ -129,6 +134,26 @@ public class Main {
             in.close();
         }
         long result = outputFile.length();
+        return result;
+    }
+
+    public static long getDictionaryBytes(short[] shrt_array) throws IOException {
+        //short[] shrt_array = InputParser.parseFile(name, false);
+        ByteBuffer buffer = ByteBuffer.allocate(shrt_array.length * 2);
+        buffer.order(ByteOrder.LITTLE_ENDIAN);
+        buffer.asShortBuffer().put(shrt_array);
+        byte[] bytes = buffer.array();
+
+        byte[] compressed = QuickLZ.compress(bytes, 3);
+
+        File compressedFile= new File("QuickLZ_compress.txt");
+        FileOutputStream fs = new FileOutputStream(compressedFile);
+        ObjectOutputStream oos = new ObjectOutputStream(fs);
+        oos.write(compressed);
+        oos.close();
+        fs.close();
+
+        long result = compressedFile.length();
         return result;
     }
 
