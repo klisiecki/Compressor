@@ -63,19 +63,16 @@ public class Main {
         long bZip2Bytes = getBZip2Bytes(inputData);
         System.out.println("BZip2 file bytes: " + bZip2Bytes + " in " + (System.currentTimeMillis() - time3) + "ms");
         long time4 = System.currentTimeMillis();
-        long rawBytes = getRawBytes(inputData);
+        long rawBytes = getRawBytes(inputData, "testRaw");
         System.out.println("Raw file bytes: " + rawBytes + " in " + (System.currentTimeMillis() - time4) + "ms");
         long time5 = System.currentTimeMillis();
-        long arithmeticBytes = getArithmeticBytes(inputData);
-        System.out.println("Arythmetic file bytes: " + arithmeticBytes + " in " + (System.currentTimeMillis() - time5) + "ms");
-
-
-
+        long arithmeticBytes = getArithmeticBytes("testRaw");
+        System.out.println("Arithmetic file bytes: " + arithmeticBytes + " in " + (System.currentTimeMillis() - time5) + "ms");
 
     }
 
-    private static long getRawBytes(short[] data) throws IOException {
-        File testRaw = new File("testRaw");
+    private static long getRawBytes(short[] data, String fileName) throws IOException {
+        File testRaw = new File(fileName);
         FileOutputStream fs = new FileOutputStream(testRaw);
         ObjectOutputStream oos = new ObjectOutputStream(fs);
 
@@ -89,7 +86,6 @@ public class Main {
         fs.close();
 
         long result = testRaw.length();
-//        testRaw.delete();
         return result;
     }
 
@@ -114,12 +110,8 @@ public class Main {
         return result;
     }
 
-    public static long getArithmeticBytes(short[] data) throws IOException {
-        Compressor compressor = new Compressor(false);
-        compressor.initializePackage(data, -1, CompressMode.VALUES);
-        saveData("savedValuesMode", compressor.compress());
-        // Otherwise, compress
-        File inputFile = new File("savedValuesMode");
+    public static long getArithmeticBytes(String name) throws IOException {
+        File inputFile = new File(name);
         File outputFile = new File("testArithmetic");
 
         // Read input file once to compute symbol frequencies
@@ -136,7 +128,8 @@ public class Main {
             out.close();
             in.close();
         }
-        return outputFile.length();
+        long result = outputFile.length();
+        return result;
     }
 
     private static long getBZip2Bytes(short[] data) throws IOException, CompressorException {
