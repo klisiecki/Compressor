@@ -1,10 +1,6 @@
 package com.company;
 
-import java.util.Arrays;
-
-import static com.company.CompressMode.GROWTHS;
-import static com.company.CompressMode.MIXED;
-import static com.company.CompressMode.VALUES;
+import static com.company.CompressMode.*;
 
 public class Compressor {
 
@@ -18,7 +14,7 @@ public class Compressor {
         this.verbose = verbose;
     }
 
-    public int initializePackage(short[] data, int maxPackageSize) {
+    public int initializePackage(short[] data, int maxPackageSize, CompressMode mode) {
 //        log(Arrays.toString(createStats(data)) + "\n");
         this.header = new PackageHeader();
         this.inputData = data;
@@ -35,19 +31,23 @@ public class Compressor {
         log("\nValues mode statistics:");
         valuesResult.print();
 
+
         // Tylko tymczasowo:
 //        header.initialize(GROWTHS, growthsResult.dataCount, growthsResult.growthBits);
 //        header.initialize(MIXED, mixedResult.dataCount, mixedResult.growthBits);
-//        header.initialize(VALUES, valuesResult.dataCount, valuesResult.growthBits);
+        if (mode != null) {
+            header.initialize(mode, valuesResult.dataCount, valuesResult.growthBits);
+        } else {
 
-        // Potem to odkomentować:
-        if (growthsResult.dataCount + 1 >= mixedResult.dataCount + 1
-                && growthsResult.dataCount + 1 >= valuesResult.dataCount) { // growths mode
-            header.initialize(GROWTHS, growthsResult.dataCount, growthsResult.growthBits);
-        } else if (mixedResult.dataCount + 1 >= valuesResult.dataCount) { // mixed mode
-            header.initialize(MIXED, mixedResult.dataCount, mixedResult.growthBits);
-        } else { // values mode
-            header.initialize(VALUES, valuesResult.dataCount, valuesResult.growthBits);
+            // Potem to odkomentować:
+            if (growthsResult.dataCount + 1 >= mixedResult.dataCount + 1
+                    && growthsResult.dataCount + 1 >= valuesResult.dataCount) { // growths mode
+                header.initialize(GROWTHS, growthsResult.dataCount, growthsResult.growthBits);
+            } else if (mixedResult.dataCount + 1 >= valuesResult.dataCount) { // mixed mode
+                header.initialize(MIXED, mixedResult.dataCount, mixedResult.growthBits);
+            } else { // values mode
+                header.initialize(VALUES, valuesResult.dataCount, valuesResult.growthBits);
+            }
         }
         return header.getDataCount();
     }

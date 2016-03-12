@@ -1,5 +1,8 @@
 package com.company;
 
+import com.company.external.arithmetic.ArithmeticCompress;
+import com.company.external.arithmetic.BitOutputStream;
+import com.company.external.arithmetic.FrequencyTable;
 import org.apache.commons.compress.compressors.CompressorException;
 import org.apache.commons.compress.compressors.CompressorOutputStream;
 import org.apache.commons.compress.compressors.CompressorStreamFactory;
@@ -45,7 +48,7 @@ public class Main {
         long time1 = System.currentTimeMillis();
         while (compressedIndex < inputData.length - 1) {
             short[] packageData = Arrays.copyOfRange(inputData, compressedIndex, inputData.length);
-            int countInPackage = compressor.initializePackage(packageData, packageSize);
+            int countInPackage = compressor.initializePackage(packageData, packageSize, null);
             compressedIndex += countInPackage;
             CustomBitSet result = compressor.compress();
             resultSize += saveData(outFile + "_" + iteration, result);
@@ -62,6 +65,13 @@ public class Main {
         long time4 = System.currentTimeMillis();
         long rawBytes = getRawBytes(inputData);
         System.out.println("Raw file bytes: " + rawBytes + " in " + (System.currentTimeMillis() - time4) + "ms");
+        long time5 = System.currentTimeMillis();
+        long arithmeticBytes = getArithmeticBytes(inputData);
+        System.out.println("Arythmetic file bytes: " + arithmeticBytes + " in " + (System.currentTimeMillis() - time5) + "ms");
+
+
+
+
     }
 
     private static long getRawBytes(short[] data) throws IOException {
@@ -102,6 +112,31 @@ public class Main {
         long result = testFile.length();
 //        testFile.delete();
         return result;
+    }
+
+    public static long getArithmeticBytes(short[] data) throws IOException {
+        Compressor compressor = new Compressor(false);
+        compressor.initializePackage(data, -1, CompressMode.VALUES);
+        saveData("savedValuesMode", compressor.compress());
+        // Otherwise, compress
+        File inputFile = new File("savedValuesMode");
+        File outputFile = new File("testArithmetic");
+
+        // Read input file once to compute symbol frequencies
+        FrequencyTable freq = ArithmeticCompress.getFrequencies(inputFile);
+        freq.increment(256);  // EOF symbol gets a frequency of 1
+
+        // Read input file again, compress with arithmetic coding, and write output file
+        InputStream in = new BufferedInputStream(new FileInputStream(inputFile));
+        BitOutputStream out = new BitOutputStream(new BufferedOutputStream(new FileOutputStream(outputFile)));
+        try {
+            ArithmeticCompress.writeFrequencies(out, freq);
+            ArithmeticCompress.compress(freq, in, out);
+        } finally {
+            out.close();
+            in.close();
+        }
+        return outputFile.length();
     }
 
     private static long getBZip2Bytes(short[] data) throws IOException, CompressorException {

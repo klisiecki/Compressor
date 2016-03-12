@@ -40,7 +40,7 @@ public class ArithmeticCompress {
 	}
 	
 	
-	private static FrequencyTable getFrequencies(File file) throws IOException {
+	public static FrequencyTable getFrequencies(File file) throws IOException {
 		FrequencyTable freq = new SimpleFrequencyTable(new int[257]);
 		InputStream input = new BufferedInputStream(new FileInputStream(file));
 		try {
@@ -57,13 +57,13 @@ public class ArithmeticCompress {
 	}
 	
 	
-	static void writeFrequencies(BitOutputStream out, FrequencyTable freq) throws IOException {
+	public static void writeFrequencies(BitOutputStream out, FrequencyTable freq) throws IOException {
 		for (int i = 0; i < 256; i++)
 			writeInt(out, 32, freq.get(i));
 	}
 	
 	
-	static void compress(FrequencyTable freq, InputStream in, BitOutputStream out) throws IOException {
+	public static void compress(FrequencyTable freq, InputStream in, BitOutputStream out) throws IOException {
 		ArithmeticEncoder enc = new ArithmeticEncoder(out);
 		while (true) {
 			int b = in.read();
