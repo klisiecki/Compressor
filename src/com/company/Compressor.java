@@ -19,7 +19,7 @@ public class Compressor {
     }
 
     public int initializePackage(short[] data, int maxPackageSize) {
-        log(Arrays.toString(createStats(data)) + "\n");
+//        log(Arrays.toString(createStats(data)) + "\n");
         this.header = new PackageHeader();
         this.inputData = data;
         this.maxPackageSize = maxPackageSize > 0 ? maxPackageSize : Integer.MAX_VALUE;

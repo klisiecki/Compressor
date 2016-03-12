@@ -59,7 +59,9 @@ public class Main {
         long time3 = System.currentTimeMillis();
         long bZip2Bytes = getBZip2Bytes(inputData);
         System.out.println("BZip2 file bytes: " + bZip2Bytes + " in " + (System.currentTimeMillis() - time3) + "ms");
-        System.out.println("Raw file bytes: " + getRawBytes(inputData));
+        long time4 = System.currentTimeMillis();
+        long rawBytes = getRawBytes(inputData);
+        System.out.println("Raw file bytes: " + rawBytes + " in " + (System.currentTimeMillis() - time4) + "ms");
     }
 
     private static long getRawBytes(short[] data) throws IOException {
@@ -77,7 +79,7 @@ public class Main {
         fs.close();
 
         long result = testRaw.length();
-        testRaw.delete();
+//        testRaw.delete();
         return result;
     }
 
@@ -98,7 +100,7 @@ public class Main {
         fs.close();
 
         long result = testFile.length();
-        testFile.delete();
+//        testFile.delete();
         return result;
     }
 
