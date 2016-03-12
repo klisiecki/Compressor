@@ -14,6 +14,7 @@ import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -31,7 +32,10 @@ public class Main {
             if ("-d".equals(args[0])) {
                 decompress(compressor, args[1]);
             } else {
-                compress(compressor, args[0], args[1], Integer.parseInt(args[2]), false);
+                compareCompressors(compressor, args[0], args[1], Integer.parseInt(args[2]), false);
+
+//                List<Integer> packageSizeArray = Arrays.asList(100,500,1000,2000,5000,10000,20000,30000);
+//                comparePackageSizes(compressor, args[0], args[1], packageSizeArray, false);
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -40,14 +44,51 @@ public class Main {
         }
     }
 
-    private static void compress(Compressor compressor, String inFile, String outFile, int packageSize, Boolean isClearInput) throws IOException, CompressorException {
+    private static void comparePackageSizes(Compressor compressor, String inFile, String outFile, List<Integer> packageSizeArray, Boolean isClearInput) throws IOException, CompressorException {
+        System.out.println("Packege size compare: " + packageSizeArray);
+        short[] inputData = InputParser.parseFile(inFile, isClearInput);
+        int resultSize;
+
+        for(int packageSize: packageSizeArray) {
+            resultSize = compress(compressor, outFile, packageSize, inputData);
+            System.out.println("packageSize=" + packageSize + " compressed file bytes: " + resultSize );
+        }
+    }
+
+    private static void compareCompressors(Compressor compressor, String inFile, String outFile, int packageSize, Boolean isClearInput) throws IOException, CompressorException {
         System.out.println("Compressing " + inFile + " to " + outFile + " with " + packageSize + " package size");
         short[] inputData = InputParser.parseFile(inFile, isClearInput);
         System.out.println(inputData.length + " numbers in file");
+
+        long time1 = System.currentTimeMillis();
+        int resultSize = compress(compressor, outFile, packageSize, inputData);
+        System.out.println("Compressed file bytes: " + resultSize + " in " + (System.currentTimeMillis() - time1) + "ms");
+
+        long time2 = System.currentTimeMillis();
+        long zipBytes = getZipBytes(inputData);
+        System.out.println("Zip file bytes: " + zipBytes + " in " + (System.currentTimeMillis() - time2) + "ms");
+
+        long time3 = System.currentTimeMillis();
+        long bZip2Bytes = getBZip2Bytes(inputData);
+        System.out.println("BZip2 file bytes: " + bZip2Bytes + " in " + (System.currentTimeMillis() - time3) + "ms");
+
+        long time4 = System.currentTimeMillis();
+        long rawBytes = getRawBytes(inputData, "testRaw");
+        System.out.println("Raw file bytes: " + rawBytes + " in " + (System.currentTimeMillis() - time4) + "ms");
+
+        long time5 = System.currentTimeMillis();
+        long arithmeticBytes = getArithmeticBytes("testRaw");
+        System.out.println("Arithmetic file bytes: " + arithmeticBytes + " in " + (System.currentTimeMillis() - time5) + "ms");
+
+        long time6 = System.currentTimeMillis();
+        long dictionaryBytes = getDictionaryBytes(inputData);
+        System.out.println("Dictionary file bytes: " + dictionaryBytes + " in " + (System.currentTimeMillis() - time5) + "ms");
+    }
+
+    private static int compress(Compressor compressor, String outFile, int packageSize, short[] inputData) throws IOException {
         int compressedIndex = 0;
         int iteration = 0;
         int resultSize = 0;
-        long time1 = System.currentTimeMillis();
         while (compressedIndex < inputData.length - 1) {
             short[] packageData = Arrays.copyOfRange(inputData, compressedIndex, inputData.length);
             int countInPackage = compressor.initializePackage(packageData, packageSize, null);
@@ -57,23 +98,7 @@ public class Main {
 //            printResult(result);
             iteration++;
         }
-        System.out.println("Compressed file bytes: " + resultSize + " in " + (System.currentTimeMillis() - time1) + "ms");
-        long time2 = System.currentTimeMillis();
-        long zipBytes = getZipBytes(inputData);
-        System.out.println("Zip file bytes: " + zipBytes + " in " + (System.currentTimeMillis() - time2) + "ms");
-        long time3 = System.currentTimeMillis();
-        long bZip2Bytes = getBZip2Bytes(inputData);
-        System.out.println("BZip2 file bytes: " + bZip2Bytes + " in " + (System.currentTimeMillis() - time3) + "ms");
-        long time4 = System.currentTimeMillis();
-        long rawBytes = getRawBytes(inputData, "testRaw");
-        System.out.println("Raw file bytes: " + rawBytes + " in " + (System.currentTimeMillis() - time4) + "ms");
-        long time5 = System.currentTimeMillis();
-        long arithmeticBytes = getArithmeticBytes("testRaw");
-        System.out.println("Arithmetic file bytes: " + arithmeticBytes + " in " + (System.currentTimeMillis() - time5) + "ms");
-        long time6 = System.currentTimeMillis();
-        long dictionaryBytes = getDictionaryBytes(inputData);
-        System.out.println("Dictionary file bytes: " + dictionaryBytes + " in " + (System.currentTimeMillis() - time5) + "ms");
-
+        return resultSize;
     }
 
     private static long getRawBytes(short[] data, String fileName) throws IOException {
