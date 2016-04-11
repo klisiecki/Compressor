@@ -23,15 +23,15 @@ public class Main {
     public static void main(String[] args) {
         if (args.length < 2) {
             System.out.println("Usage:");
-            System.out.println("Compress: -compress inputFile outputFile packageSize [-v]");
-            System.out.println("Compare compressors: -compare inputFile outputFile packageSize [-v]");
-            System.out.println("Compare different package sizes: -comparePackages inputFile outputFile packageSize [-v]");
-            System.out.println("Decompress: -decompress compressedFile outFile [-v]");
+            System.out.println("Compress data: \t\t\t-compress inputFile outputFile packageSize [-v]");
+            System.out.println("Compare compressors: \t-compare inputFile outputFile packageSize [-v]");
+            System.out.println("Compare package sizes: \t-comparePackages inputFile outputFile [-v]");
+            System.out.println("Decompress data: \t\t-decompress compressedFile outFile [-v]");
             return;
         }
         try {
             Compressor compressor = new Compressor(args[args.length-1].equals("-v"));
-            if ("-d".equals(args[0])) {
+            if ("-decompress".equals(args[0])) {
                 decompress(compressor, args[1], args[2]);
             } else if ("-compare".equals(args[0])) {
                 compareCompressors(compressor, args[1], args[2], Integer.parseInt(args[3]), false);
