@@ -23,19 +23,25 @@ public class Main {
     public static void main(String[] args) {
         if (args.length < 2) {
             System.out.println("Usage:");
-            System.out.println("Compressing: inputFile outputFile packageSize [-v]");
-            System.out.println("Decompressing: -d outputFile [-v]");
+            System.out.println("Compress: -compress inputFile outputFile packageSize [-v]");
+            System.out.println("Compare compressors: -compare inputFile outputFile packageSize [-v]");
+            System.out.println("Compare different package sizes: -comparePackages inputFile outputFile packageSize [-v]");
+            System.out.println("Decompress: -decompress compressedFile outFile [-v]");
             return;
         }
         try {
             Compressor compressor = new Compressor(args[args.length-1].equals("-v"));
             if ("-d".equals(args[0])) {
-                decompress(compressor, args[1]);
+                decompress(compressor, args[1], args[2]);
+            } else if ("-compare".equals(args[0])) {
+                compareCompressors(compressor, args[1], args[2], Integer.parseInt(args[3]), false);
+            } else if ("-comparePackages".equals(args[0])){
+                List<Integer> packageSizeArray = Arrays.asList(100,500,1000,2000,5000,10000,20000,30000);
+                comparePackageSizes(compressor, args[1], args[2], packageSizeArray, false);
+            } else if ("-compress".equals(args[0])){
+                compress(compressor, args[1], args[2], Integer.parseInt(args[3]), false);
             } else {
-                compareCompressors(compressor, args[0], args[1], Integer.parseInt(args[2]), false);
-
-//                List<Integer> packageSizeArray = Arrays.asList(100,500,1000,2000,5000,10000,20000,30000);
-//                comparePackageSizes(compressor, args[0], args[1], packageSizeArray, false);
+                System.out.println("Unknown option " + args[0]);
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -56,6 +62,7 @@ public class Main {
     }
 
     private static void compareCompressors(Compressor compressor, String inFile, String outFile, int packageSize, Boolean isClearInput) throws IOException, CompressorException {
+        System.out.println("Comparing compressors");
         System.out.println("Compressing " + inFile + " to " + outFile + " with " + packageSize + " package size");
         short[] inputData = InputParser.parseFile(inFile, isClearInput);
         System.out.println(inputData.length + " numbers in file");
@@ -82,10 +89,20 @@ public class Main {
 
         long time6 = System.currentTimeMillis();
         long dictionaryBytes = getDictionaryBytes(inputData);
-        System.out.println("Dictionary file bytes: " + dictionaryBytes + " in " + (System.currentTimeMillis() - time5) + "ms");
+        System.out.println("Dictionary file bytes: " + dictionaryBytes + " in " + (System.currentTimeMillis() - time6) + "ms");
     }
 
-    private static int compress(Compressor compressor, String outFile, int packageSize, short[] inputData) throws IOException {
+    private static void compress(Compressor compressor, String inFile, String outFile, int packageSize, Boolean isClearInput) throws IOException, CompressorException {
+        System.out.println("Compressing " + inFile + " to " + outFile + " with " + packageSize + " package size");
+        short[] inputData = InputParser.parseFile(inFile, isClearInput);
+        System.out.println(inputData.length + " numbers in file");
+
+        long time1 = System.currentTimeMillis();
+        int resultSize = compress(compressor, outFile, packageSize, inputData);
+        System.out.println("Compressed file bytes: " + resultSize + " in " + (System.currentTimeMillis() - time1) + "ms");
+    }
+
+        private static int compress(Compressor compressor, String outFile, int packageSize, short[] inputData) throws IOException {
         int compressedIndex = 0;
         int iteration = 0;
         int resultSize = 0;
@@ -220,10 +237,15 @@ public class Main {
         System.out.println();
     }
 
-    private static void decompress(Compressor compressor, String file) throws IOException {
+    private static void decompress(Compressor compressor, String file, String outFile) throws IOException {
         System.out.println("Decompressing " + file);
         CustomBitSet bitSet = readCompressedFile(file);
-        compressor.decompress(bitSet);
+        PrintWriter writer = new PrintWriter(outFile, "UTF-8");
+        short[] decompressed = compressor.decompress(bitSet);
+        for (short s: decompressed) {
+            writer.println((float) s/10);
+        }
+
     }
 
     private static CustomBitSet readCompressedFile(String file) throws IOException {
@@ -244,8 +266,6 @@ public class Main {
             readTab[i] = data.get(i);
         }
 
-        System.out.println();
-        System.out.println("Arrays.toString(readTab) = " + Arrays.toString(readTab));
         return new CustomBitSet(BitSet.valueOf(readTab));
     }
 }

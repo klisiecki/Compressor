@@ -238,7 +238,6 @@ public class Compressor {
         for (i = 1; i <= packageHeader.getDataCount(); i++) {
             growth = (short) (data[i] - value);
             int bit = (i - 1) * dataBits + 29;
-            log("bit = " + bit);
             result.addConversed(bit, bit + dataBits, growth);
             value = data[i];
         }
@@ -339,14 +338,13 @@ public class Compressor {
             return decompressGrowthsMode(bitSet);
         } else if (b0 && b1) {
             log("\nMIXED MODE\n");
-            decompressMixedMode(bitSet);
+            return decompressMixedMode(bitSet);
         } else if (!b0 && b1) {
             log("\nVALUES MODE\n");
             return decompressValuesMode(bitSet);
         } else {
             throw new RuntimeException("Data header error");
         }
-        return null;
     }
 
     private short[] decompressGrowthsMode(CustomBitSet bitSet) {
@@ -389,7 +387,6 @@ public class Compressor {
                 //przyrost
                 short growth = bitSet.getConversed(bit + 1, bit + bitsForGrowth);
                 tab[i] = (short) (tab[i - 1] + growth);
-//                new CustomBitSet(bitSet.get(bit + 1, bit + bitsForGrowth)).print(); // po cholerę ta linijka?
                 log("tab[" + i + "] = " + tab[i] + " (growth = " + growth + ")");
                 bit += bitsForGrowth + 1;
             }
